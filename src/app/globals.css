@@ -1,11 +1,178 @@
-html {
-  scroll-behavior: smooth;
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans: var(--font-inter);
+    --font-serif: var(--font-playfair);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --animate-accordion-down: accordion-down 0.2s ease-out;
+    --animate-accordion-up: accordion-up 0.2s ease-out;
+    --animate-glow: glow 2s ease-in-out infinite alternate;
+
+    @keyframes accordion-down {
+        from {
+            height: 0
+        }
+
+        to {
+            height: var(--radix-accordion-content-height)
+        }
+    }
+
+    @keyframes accordion-up {
+        from {
+            height: var(--radix-accordion-content-height)
+        }
+
+        to {
+            height: 0
+        }
+    }
+
+    @keyframes glow {
+        from {
+            box-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary)
+        }
+
+        to {
+            box-shadow: 0 0 20px var(--primary), 0 0 30px var(--primary)
+        }
+    }
 }
 
+/*
+  The default theme is now forced to DARK "Noir" mode.
+  We use deep #050505 backgrounds and neon accents.
+*/
+:root {
+    --background: #050505;
+    --foreground: #ededed;
+
+    --card: #0a0a0a;
+    --card-foreground: #ededed;
+
+    --popover: #0a0a0a;
+    --popover-foreground: #ededed;
+
+    /* Neon Pink (Sex Shop) as default primary, can be overridden */
+    --primary: #d946ef;
+    --primary-foreground: #ffffff;
+
+    --secondary: #27272a;
+    --secondary-foreground: #ededed;
+
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
+
+    --accent: #27272a;
+    --accent-foreground: #ededed;
+
+    --destructive: #7f1d1d;
+    --destructive-foreground: #ededed;
+
+    --border: #27272a;
+    --input: #27272a;
+    --ring: #d946ef;
+
+    --radius: 0.5rem;
+
+    /* Custom Store Colors */
+    --sex-shop-primary: #d946ef;
+    /* Fuchsia 500 */
+    --smoke-shop-primary: #22c55e;
+    /* Green 500 */
+}
+
+@utility container {
+    margin-inline: auto;
+    padding-inline: 2rem;
+
+    @media (width >=--theme(--breakpoint-sm)) {
+        max-width: none;
+    }
+
+    @media (width >=--theme(--breakpoint-md)) {
+        max-width: 61rem;
+    }
+
+    @media (width >=--theme(--breakpoint-lg)) {
+        max-width: 80rem;
+    }
+
+    @media (width >=--theme(--breakpoint-xl)) {
+        max-width: 90rem;
+    }
+
+    @media (width >=--theme(--breakpoint-2xl)) {
+        max-width: 96rem;
+    }
+}
+
+/* Glassmorphism Utilities */
+@layer utilities {
+    .glass {
+        @apply bg-black/40 backdrop-blur-md border border-white/10;
+    }
+
+    .glass-card {
+        @apply bg-zinc-900/40 backdrop-blur-xl border border-white/5 shadow-xl;
+    }
+
+    .neon-text {
+        text-shadow: 0 0 10px currentColor;
+    }
+
+    .neon-border {
+        box-shadow: 0 0 10px var(--primary);
+    }
+}
+
+/* Global resets for smoother fonts */
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.02em;
 }
