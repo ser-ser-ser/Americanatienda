@@ -2,60 +2,33 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
-import { Loader2, ShieldAlert, Lock, Home } from 'lucide-react'
+import { Loader2, ShieldAlert, Lock, Home, ChevronDown, Store as StoreIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { VendorProvider, useVendor } from '@/providers/vendor-provider'
 
-export default function VendorLayout({ children }: { children: React.ReactNode }) {
-    const supabase = createClient()
-    const [loading, setLoading] = useState(true)
-    const [status, setStatus] = useState<string | null>(null)
-    const [hasStore, setHasStore] = useState(false)
+// This component handles the logic using the context
+function VendorLayoutContent({ children }: { children: React.ReactNode }) {
+    const { stores, activeStore, isLoading, selectStore } = useVendor()
     const pathname = usePathname()
     const router = useRouter()
 
     useEffect(() => {
-        const checkStatus = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
-
-            // Get store status
-            const { data: store, error } = await supabase
-                .from('stores')
-                .select('status')
-                .eq('owner_id', user.id)
-                .single()
-
-            if (store) {
-                setHasStore(true)
-                setStatus(store.status)
-            } else {
-                setHasStore(false)
-            }
-            setLoading(false)
-        }
-
-        checkStatus()
-    }, [])
-
-    useEffect(() => {
-        if (!loading) {
+        if (!isLoading) {
             // If on setup page, don't redirect
             if (pathname === '/dashboard/vendor/setup') return
 
-            // If no store, redirect to setup
-            if (!hasStore) {
-                router.push('/dashboard/vendor/setup')
+            // If no stores found, redirect to setup
+            if (stores.length === 0) {
+                router.replace('/dashboard/vendor/setup')
                 return
             }
-
-            // If pending/suspended, blocking is handled by valid status check below
         }
-    }, [loading, hasStore, pathname, router])
+    }, [isLoading, stores, pathname, router])
 
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-black text-white">
                 <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
@@ -68,6 +41,9 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
         return <>{children}</>
     }
 
+    // Use activeStore status for gating
+    const status = activeStore?.status
+
     if (status === 'pending') {
         return (
             <div className="flex h-screen w-full flex-col items-center justify-center bg-black p-4 text-white">
@@ -76,10 +52,25 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
                         <Lock className="h-8 w-8" />
                     </div>
                     <h1 className="mb-2 text-2xl font-bold">Application Under Review</h1>
-                    <p className="mb-8 text-zinc-400">
-                        Thanks for registering your store! Our team is currently reviewing your application.
-                        You will receive an email once your store is approved.
+                    <p className="mb-4 text-zinc-400">
+                        Thanks for registering <strong>{activeStore?.name}</strong>! Our team is currently reviewing your application.
                     </p>
+
+                    {/* Store Switcher for Pending State if they have others */}
+                    {stores.length > 1 && (
+                        <div className="mb-8 flex justify-center">
+                            <select
+                                className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                                value={activeStore?.id}
+                                onChange={(e) => selectStore(e.target.value)}
+                            >
+                                {stores.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name} ({s.status})</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+
                     <Link href="/">
                         <Button variant="outline" className="border-zinc-800 text-white hover:bg-zinc-800 hover:text-white">
                             <Home className="mr-2 h-4 w-4" /> Return to Home
@@ -99,14 +90,63 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
                     </div>
                     <h1 className="mb-2 text-2xl font-bold">Account Suspended</h1>
                     <p className="mb-8 text-zinc-400">
-                        Your vendor account has been suspended due to a violation of our terms.
-                        Please contact support for more information.
+                        The store <strong>{activeStore?.name}</strong> has been suspended.
                     </p>
+                    {stores.length > 1 && (
+                        <div className="mb-8 flex justify-center">
+                            <select
+                                className="bg-zinc-900 border border-zinc-700 rounded-md px-3 py-2 text-sm text-white"
+                                value={activeStore?.id}
+                                onChange={(e) => selectStore(e.target.value)}
+                            >
+                                {stores.map(s => (
+                                    <option key={s.id} value={s.id}>{s.name} ({s.status})</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <Button variant="destructive">Contact Support</Button>
                 </div>
             </div>
         )
     }
 
-    return <>{children}</>
+    // Insert the Sticky Store Header if multiple stores exist (or always for consistency)
+    return (
+        <div className="flex flex-col min-h-screen">
+            {stores.length > 1 && (
+                <div className="bg-zinc-950 border-b border-white/5 py-2 px-6 flex justify-between items-center z-50 sticky top-0">
+                    <div className="flex items-center gap-3">
+                        <StoreIcon className="h-4 w-4 text-zinc-500" />
+                        <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest hidden md:inline">Current Store:</span>
+                        <div className="relative group">
+                            <select
+                                className="appearance-none bg-black border border-zinc-800 hover:border-zinc-600 rounded-lg pl-3 pr-8 py-1.5 text-sm text-white font-bold cursor-pointer transition-colors focus:outline-none focus:ring-1 focus:ring-pink-600"
+                                value={activeStore?.id || ''}
+                                onChange={(e) => selectStore(e.target.value)}
+                            >
+                                {stores.map(s => (
+                                    <option key={s.id} value={s.id}>
+                                        {s.name} {s.status !== 'active' ? `(${s.status})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+                        </div>
+                    </div>
+                </div>
+            )}
+            <div className="flex-1">
+                {children}
+            </div>
+        </div>
+    )
+}
+
+export default function VendorLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <VendorProvider>
+            <VendorLayoutContent>{children}</VendorLayoutContent>
+        </VendorProvider>
+    )
 }

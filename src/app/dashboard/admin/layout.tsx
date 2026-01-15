@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const supabase = createClient()
     const [loading, setLoading] = useState(true)
@@ -52,5 +53,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return null // Router will redirect
     }
 
-    return <>{children}</>
+    return (
+        <>
+            {children}
+        </>
+    )
 }

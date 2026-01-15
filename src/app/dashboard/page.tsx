@@ -28,12 +28,11 @@ export default function DashboardDispatcher() {
 
             if (role === 'admin') {
                 router.replace('/dashboard/admin')
-            } else if (role === 'seller') {
+            } else if (role === 'seller' || role === 'vendor') {
                 router.replace('/dashboard/vendor')
             } else {
-                // Buyer or No Role - Send to Setup if needed, or Profile
-                // For now, let's allow them to stay on a basic dashboard view to avoid 'silent' failures
-                router.replace('/dashboard/profile')
+                // Buyer or No Role - Send to New Buyer Dashboard
+                router.replace('/dashboard/buyer')
             }
         }
 

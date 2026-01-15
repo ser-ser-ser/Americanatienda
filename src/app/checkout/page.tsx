@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCart } from '@/context/cart-context'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,6 +16,7 @@ export default function CheckoutPage() {
     const { items, cartTotal, clearCart } = useCart()
     const router = useRouter()
     const [isLoading, setIsLoading] = useState(false)
+    const supabase = createClient()
 
     // Form State
     const [formData, setFormData] = useState({
@@ -31,6 +32,17 @@ export default function CheckoutPage() {
         setFormData(prev => ({ ...prev, [name]: value }))
     }
 
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                toast.error("Please log in to complete your purchase")
+                router.push('/login?next=/checkout')
+            }
+        }
+        checkAuth()
+    }, [router, supabase])
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
@@ -42,34 +54,30 @@ export default function CheckoutPage() {
         }
 
         try {
-            const supabase = createClient()
+            // Call Stripe Checkout API
+            const response = await fetch('/api/stripe/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    items,
+                    customer_details: formData
+                })
+            })
 
-            const orderData = {
-                customer_name: formData.name,
-                email: formData.email,
-                shipping_address: formData.address, // Combining for simplicity in DB if singular field, but keeping separate in UI
-                city: formData.city,
-                zip: formData.zip,
-                items: items, // Supabase handles JSONB
-                total_amount: cartTotal,
-                status: 'pending'
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Checkout failed')
             }
 
-            const { data, error } = await supabase
-                .from('orders')
-                .insert([orderData])
-                .select()
-
-            if (error) throw error
-
-            toast.success("Order placed successfully!")
-            clearCart()
-            router.push('/checkout/success')
+            if (data.url) {
+                // Redirect to Stripe
+                window.location.href = data.url
+            }
 
         } catch (error: any) {
             console.error('Checkout error:', error)
-            toast.error("Failed to place order. Please try again.")
-        } finally {
+            toast.error(error.message || "Failed to initiate checkout")
             setIsLoading(false)
         }
     }
@@ -182,8 +190,8 @@ export default function CheckoutPage() {
                                     <div key={item.product.id} className="flex justify-between items-center text-sm">
                                         <div className="flex items-center gap-4">
                                             <div className="h-12 w-12 rounded bg-zinc-800 overflow-hidden relative">
-                                                {item.product.image_url ? (
-                                                    <img src={item.product.image_url} alt={item.product.name} className="object-cover h-full w-full" />
+                                                {item.product.image_url || item.product.images?.[0] ? (
+                                                    <img src={item.product.image_url || item.product.images?.[0]} alt={item.product.name} className="object-cover h-full w-full" />
                                                 ) : <div className="w-full h-full bg-zinc-800" />}
                                                 <span className="absolute -top-2 -right-2 bg-zinc-700 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full border border-zinc-900">
                                                     {item.quantity}
@@ -228,7 +236,7 @@ export default function CheckoutPage() {
                             )}
                         </Button>
                         <p className="text-center text-xs text-zinc-600 mt-4">
-                            Secure payment processing via Stripe (Simulated).
+                            Secure payment processing via Stripe.
                         </p>
                     </div>
 

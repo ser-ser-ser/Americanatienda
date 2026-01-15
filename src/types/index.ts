@@ -10,6 +10,7 @@ export interface Category {
 
 export interface ProductBase {
     id: string;
+    store_id: string; // Linked Store
     sku: string;
     name: string;
     description: string;

@@ -11,8 +11,12 @@ export default function CheckoutSuccessPage() {
     // Optional: could grab order ID from URL params if we passed it
     // For now, just a generic success message
 
-    // Ensure cart is cleared (redundant safety check if page reached directly)
-    // In a real app, we'd verify the session/order.
+    const { clearCart } = useCart()
+
+    useEffect(() => {
+        clearCart()
+        // Optional: Fire confetti or analytics here
+    }, [clearCart])
 
     return (
         <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
@@ -31,7 +35,7 @@ export default function CheckoutSuccessPage() {
                         Continue Shopping
                     </Button>
                 </Link>
-                <Link href="/dashboard">
+                <Link href="/dashboard/buyer">
                     <Button size="lg" variant="outline" className="h-14 px-8 rounded-full border-zinc-700 text-white hover:bg-zinc-800">
                         View Order Status <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>

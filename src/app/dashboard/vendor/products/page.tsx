@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { DashboardSidebar } from '@/components/dashboard-sidebar'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -226,8 +226,6 @@ export default function ProductsPage() {
 
     return (
         <div className="min-h-screen bg-black text-white font-sans flex">
-            <DashboardSidebar />
-
             <main className="flex-1 p-8 overflow-y-auto">
                 <div className="max-w-6xl mx-auto">
 

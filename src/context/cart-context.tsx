@@ -1,7 +1,7 @@
 
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { Product } from '@/types'
 
 export interface CartItem {
@@ -48,8 +48,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
     }, [items, isLoaded])
 
-    const addItem = (product: Product) => {
+    const addItem = useCallback((product: Product) => {
         setItems((currentItems) => {
+            // Check for store mismatch
+            if (currentItems.length > 0) {
+                const currentStoreId = currentItems[0].product.store_id
+                if (currentStoreId && product.store_id && currentStoreId !== product.store_id) {
+                    const confirmClear = window.confirm(
+                        "You can only purchase from one store at a time. Clear current cart to add this item?"
+                    )
+                    if (confirmClear) {
+                        return [{ product, quantity: 1 }]
+                    }
+                    return currentItems
+                }
+            }
+
             const existingItem = currentItems.find((item) => item.product.id === product.id)
             if (existingItem) {
                 return currentItems.map((item) =>
@@ -61,15 +75,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             return [...currentItems, { product, quantity: 1 }]
         })
         setIsOpen(true) // Open cart when adding item
-    }
+    }, [])
 
-    const removeItem = (productId: string) => {
+    const removeItem = useCallback((productId: string) => {
         setItems((currentItems) => currentItems.filter((item) => item.product.id !== productId))
-    }
+    }, [])
 
-    const updateQuantity = (productId: string, quantity: number) => {
+    const updateQuantity = useCallback((productId: string, quantity: number) => {
         if (quantity < 1) {
-            removeItem(productId)
+            setItems((currentItems) => currentItems.filter((item) => item.product.id !== productId))
             return
         }
         setItems((currentItems) =>
@@ -77,10 +91,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 item.product.id === productId ? { ...item, quantity } : item
             )
         )
-    }
+    }, [])
 
-    const toggleCart = () => setIsOpen((prev) => !prev)
-    const clearCart = () => setItems([])
+    const toggleCart = useCallback(() => setIsOpen((prev) => !prev), [])
+    const clearCart = useCallback(() => setItems([]), [])
+
 
     const cartTotal = items.reduce((total, item) => total + item.product.price * item.quantity, 0)
     const cartCount = items.reduce((count, item) => count + item.quantity, 0)

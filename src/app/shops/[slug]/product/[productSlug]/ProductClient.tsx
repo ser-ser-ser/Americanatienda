@@ -4,12 +4,22 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Loader2, ArrowLeft, ShoppingCart, Shield, Zap, Wind, Share2, Heart } from 'lucide-react'
+import { Loader2, ArrowLeft, ShoppingCart, Shield, Zap, Wind, Share2, Heart, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Footer } from '@/components/footer'
 import { toast } from 'sonner'
 import { useCart } from '@/context/cart-context'
+import { useChat } from '@/providers/chat-provider'
+import { NotificationBell } from '@/components/ui/notification-bell'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface ProductClientProps {
     storeSlug: string
@@ -20,11 +30,13 @@ export default function ProductClient({ storeSlug, productSlug }: ProductClientP
     const router = useRouter()
     const supabase = createClient()
     const { addItem, toggleCart } = useCart()
+    const { startInquiryChat } = useChat()
 
     const [loading, setLoading] = useState(true)
     const [store, setStore] = useState<any>(null)
     const [product, setProduct] = useState<any>(null)
     const [selectedImage, setSelectedImage] = useState<string>('')
+    const [user, setUser] = useState<any>(null)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -63,7 +75,17 @@ export default function ProductClient({ storeSlug, productSlug }: ProductClientP
             setLoading(false)
         }
 
+
+        const fetchUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+                setUser(data || user)
+            }
+        }
+
         fetchData()
+        fetchUser()
     }, [storeSlug, productSlug, supabase])
 
     const handleAddToCart = () => {
@@ -107,7 +129,48 @@ export default function ProductClient({ storeSlug, productSlug }: ProductClientP
                     <Link href={`/shops/${storeSlug}`} className="text-xl font-serif font-bold tracking-tight">
                         {store.name}
                     </Link>
-                    <div className="w-10" /> {/* Spacer for balance */}
+                    <div className="flex items-center gap-6">
+                        <Link href="/cart">
+                            <Button variant="ghost" className="text-white hover:bg-white/10 rounded-full h-10 w-10 p-0 relative">
+                                <ShoppingCart className="h-5 w-5" />
+                            </Button>
+                        </Link>
+                        <NotificationBell />
+
+                        {user ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden border border-white/20">
+                                        {user.avatar_url ? (
+                                            <Image src={user.avatar_url} alt="User" fill className="object-cover" />
+                                        ) : (
+                                            <div className="h-full w-full bg-zinc-800 flex items-center justify-center text-xs font-bold">
+                                                {user.email?.[0]?.toUpperCase()}
+                                            </div>
+                                        )}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56 bg-zinc-900 border-zinc-800 text-white" align="end">
+                                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                    <DropdownMenuSeparator className="bg-white/10" />
+                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer" onClick={() => router.push('/dashboard/profile')}>
+                                        Profile
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer" onClick={() => router.push('/dashboard/orders')}>
+                                        Orders
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator className="bg-white/10" />
+                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer text-red-400" onClick={() => supabase.auth.signOut().then(() => router.refresh())}>
+                                        Log out
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <Button variant="ghost" onClick={() => router.push('/login')} className="text-white hover:bg-white/10">
+                                Login
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </header>
 
@@ -172,6 +235,16 @@ export default function ProductClient({ storeSlug, productSlug }: ProductClientP
                             </Button>
                             <Button size="lg" variant="outline" className="h-14 w-14 p-0 border-zinc-700 hover:bg-zinc-800">
                                 <Share2 className="h-6 w-6 text-white" />
+                            </Button>
+                        </div>
+
+                        <div className="mt-4">
+                            <Button
+                                variant="ghost"
+                                className="w-full h-12 text-zinc-400 hover:text-white border border-white/10 hover:bg-white/5"
+                                onClick={() => startInquiryChat(store.id, product.id)}
+                            >
+                                <MessageCircle className="mr-2 h-4 w-4" /> Preguntar al vendedor
                             </Button>
                         </div>
 

@@ -60,7 +60,7 @@ export async function updateSession(request: NextRequest) {
 
         // Vendor Protection & Routing
         if (request.nextUrl.pathname.startsWith('/dashboard/vendor')) {
-            if (role !== 'seller' && role !== 'admin') {
+            if (role !== 'seller' && role !== 'vendor' && role !== 'admin') {
                 // Allow admin to peek? Or strict? Let's be strict for now or redirect buyers.
                 const url = request.nextUrl.clone()
                 url.pathname = '/dashboard'
@@ -69,7 +69,9 @@ export async function updateSession(request: NextRequest) {
 
             // C. Vendor Status Check (Store)
             // Only run this if we are not already on the setup or waiting pages to avoid loops
-            if (!request.nextUrl.pathname.includes('/setup') && role === 'seller') {
+            // C. Vendor Status Check (Store)
+            // Only run this if we are not already on the setup or waiting pages to avoid loops
+            if (!request.nextUrl.pathname.includes('/setup') && (role === 'seller' || role === 'vendor')) {
                 const { data: store } = await supabase
                     .from('stores')
                     .select('status')

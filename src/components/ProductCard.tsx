@@ -3,8 +3,9 @@ import React from 'react';
 import Image from 'next/image';
 import { ShoppingCart, Check, Shield, Zap, Wind } from 'lucide-react';
 import { Product } from '@/types';
-
 import Link from 'next/link';
+import { useCart } from '@/context/cart-context';
+import { toast } from 'sonner';
 
 interface ProductCardProps {
     product: Product;
@@ -12,8 +13,16 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, storeSlug }: ProductCardProps) {
+    const { addItem } = useCart();
     const isSexShop = product.store_type === 'sex-shop';
     const isSmokeShop = product.store_type === 'smoke-shop';
+
+    const handleAddToCart = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        addItem(product);
+        toast.success(`added ${product.name} to cart`);
+    };
 
     return (
         <Link href={`/shops/${storeSlug}/product/${product.slug}`} className="group flex flex-col bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer block">
@@ -75,7 +84,10 @@ export function ProductCard({ product, storeSlug }: ProductCardProps) {
                         <span className="text-xl font-bold text-gray-900 tracking-tight">${Number(product.price).toFixed(2)}</span>
                     </div>
 
-                    <button className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white hover:bg-gray-800 active:scale-95 transition-all shadow-md group-hover:shadow-lg">
+                    <button
+                        onClick={handleAddToCart}
+                        className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white hover:bg-gray-800 active:scale-95 transition-all shadow-md group-hover:shadow-lg z-10 relative"
+                    >
                         <ShoppingCart size={18} />
                     </button>
                 </div>

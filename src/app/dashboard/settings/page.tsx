@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRouter } from 'next/navigation'
 import { FileUpload } from '@/components/ui/file-upload'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
+import { User } from 'lucide-react'
 
 export default function SettingsPage() {
     const [content, setContent] = useState<Record<string, string>>({})
@@ -21,10 +23,25 @@ export default function SettingsPage() {
     const router = useRouter()
     const supabase = createClient()
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+    const [isAdmin, setIsAdmin] = useState(false)
+    const [profile, setProfile] = useState<any>(null)
 
     useEffect(() => {
-        fetchContent()
+        const init = async () => {
+            await Promise.all([fetchContent(), checkUserRole()])
+            setLoading(false)
+        }
+        init()
     }, [])
+
+    const checkUserRole = async () => {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+            const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+            setProfile(data)
+            if (data?.role === 'admin') setIsAdmin(true)
+        }
+    }
 
     const fetchContent = async () => {
         try {
@@ -40,7 +57,6 @@ export default function SettingsPage() {
                 }, {})
                 setContent(contentMap)
 
-                // Parse categories if they exist
                 if (contentMap['nav_categories']) {
                     try {
                         setCategories(JSON.parse(contentMap['nav_categories']))
@@ -51,8 +67,6 @@ export default function SettingsPage() {
             }
         } catch (error) {
             console.error('Settings Error:', error)
-        } finally {
-            setLoading(false)
         }
     }
 
@@ -132,14 +146,16 @@ export default function SettingsPage() {
         setContent(prev => ({ ...prev, 'nav_categories': JSON.stringify(newCats) }))
     }
 
-    if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-white" /></div>
+
+
+    // ... existing fetchContent ...
 
     return (
         <div className="min-h-screen bg-black text-white p-6 pb-24">
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-3xl font-serif font-bold">Settings</h1>
-                    <p className="text-zinc-400">Manage global configurations and site content</p>
+                    <p className="text-zinc-400">Manage your profile {isAdmin && '& site configuration'}</p>
                     {saving === 'autosave' && <span className="text-xs text-primary animate-pulse">Saving changes...</span>}
                 </div>
                 <Button onClick={() => router.push('/dashboard')} variant="outline" className="border-white/10 text-zinc-400 hover:text-white">
@@ -147,15 +163,86 @@ export default function SettingsPage() {
                 </Button>
             </div>
 
-            <Tabs defaultValue="branding" className="space-y-6">
+            <Tabs defaultValue="profile" className="space-y-6">
                 <TabsList className="bg-zinc-900 border border-zinc-800 p-1 flex-wrap h-auto">
-                    <TabsTrigger value="branding">Brand & SEO</TabsTrigger>
-                    <TabsTrigger value="hero">Hero</TabsTrigger>
-                    <TabsTrigger value="stores">Portals (Stores)</TabsTrigger>
-                    <TabsTrigger value="navigation">Navigation</TabsTrigger>
-                    <TabsTrigger value="social">Social</TabsTrigger>
-                    <TabsTrigger value="legal">Legal & Contact</TabsTrigger>
+                    <TabsTrigger value="profile">My Profile</TabsTrigger>
+                    {isAdmin && (
+                        <>
+                            <TabsTrigger value="branding">Brand & SEO</TabsTrigger>
+                            <TabsTrigger value="hero">Hero</TabsTrigger>
+                            <TabsTrigger value="stores">Portals (Stores)</TabsTrigger>
+                            <TabsTrigger value="navigation">Navigation</TabsTrigger>
+                            <TabsTrigger value="social">Social</TabsTrigger>
+                            <TabsTrigger value="legal">Legal & Contact</TabsTrigger>
+                        </>
+                    )}
                 </TabsList>
+
+                <TabsContent value="profile" className="space-y-6">
+                    <Card className="bg-zinc-900 border-zinc-800">
+                        <CardHeader>
+                            <CardTitle>User Profile</CardTitle>
+                            <CardDescription>Manage your account details</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-6">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-24 w-24 rounded-full bg-zinc-800 overflow-hidden border border-zinc-700 relative group">
+                                        {profile?.avatar_url ? (
+                                            <img src={profile.avatar_url} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <div className="h-full w-full flex items-center justify-center text-zinc-500"><User className="h-8 w-8" /></div>
+                                        )}
+                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <FileUpload
+                                                bucketName="avatars"
+                                                folderName="profiles"
+                                                label="Upload"
+                                                aspectRatio={1}
+                                                onUploadComplete={async (url) => {
+                                                    await supabase.from('profiles').update({ avatar_url: url }).eq('id', profile.id)
+                                                    setProfile({ ...profile, avatar_url: url })
+                                                    toast.success('Avatar updated')
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white">{profile?.full_name || 'Anonymous'}</h3>
+                                        <p className="text-zinc-500 text-sm">{profile?.email}</p>
+                                        <Badge variant="outline" className="mt-2 text-zinc-400 border-zinc-700">{profile?.role?.toUpperCase()}</Badge>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label>Display Name</Label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            value={profile?.full_name || ''}
+                                            onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                                            className="bg-black/50 border-zinc-700"
+                                        />
+                                        <Button
+                                            onClick={async () => {
+                                                const { error } = await supabase.from('profiles').update({ full_name: profile.full_name }).eq('id', profile.id)
+                                                if (!error) toast.success('Name updated')
+                                                else toast.error('Failed to update name')
+                                            }}
+                                            variant="secondary"
+                                        >
+                                            Save
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label>Email</Label>
+                                    <Input value={profile?.email || ''} disabled className="bg-white/5 border-white/10 text-zinc-500" />
+                                    <p className="text-xs text-zinc-600">Email cannot be changed manually.</p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
 
                 {/* BRANDING SECTION */}
                 <TabsContent value="branding" className="space-y-6">

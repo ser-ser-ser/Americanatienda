@@ -4,12 +4,23 @@ import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Loader2, ShoppingBag, Menu, ArrowLeft, Search, Instagram } from 'lucide-react'
+import { Loader2, ShoppingBag, Menu, ArrowLeft, Search, Instagram, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/ProductCard'
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { useChat } from '@/providers/chat-provider'
+import { NotificationBell } from '@/components/ui/notification-bell'
+import { User as UserIcon } from 'lucide-react'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function StorefrontClient() {
     const params = useParams()
@@ -20,6 +31,8 @@ export default function StorefrontClient() {
     const [categories, setCategories] = useState<any[]>([])
     const [products, setProducts] = useState<any[]>([])
     const [activeCategory, setActiveCategory] = useState<string>('all')
+    const [user, setUser] = useState<any>(null)
+    const { startInquiryChat } = useChat()
 
     useEffect(() => {
         const fetchStore = async () => {
@@ -59,8 +72,18 @@ export default function StorefrontClient() {
             setLoading(false)
         }
 
+        const fetchUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                // get profile for avatar
+                const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+                setUser(data || user)
+            }
+        }
+
         if (params.slug) {
             fetchStore()
+            fetchUser()
         }
     }, [params.slug, router, supabase])
 
@@ -114,6 +137,42 @@ export default function StorefrontClient() {
                                 {/* Cart Count Badge would go here */}
                             </Button>
                         </Link>
+
+                        <NotificationBell />
+
+                        {user ? (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden border border-white/20">
+                                        {user.avatar_url ? (
+                                            <Image src={user.avatar_url} alt="User" fill className="object-cover" />
+                                        ) : (
+                                            <div className="h-full w-full bg-zinc-800 flex items-center justify-center text-xs font-bold">
+                                                {user.email?.[0]?.toUpperCase()}
+                                            </div>
+                                        )}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent className="w-56 bg-zinc-900 border-zinc-800 text-white" align="end">
+                                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                    <DropdownMenuSeparator className="bg-white/10" />
+                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer" onClick={() => router.push('/dashboard/profile')}>
+                                        Profile
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer" onClick={() => router.push('/dashboard/orders')}>
+                                        Orders
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator className="bg-white/10" />
+                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer text-red-400" onClick={() => supabase.auth.signOut().then(() => router.refresh())}>
+                                        Log out
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        ) : (
+                            <Button variant="ghost" onClick={() => router.push('/login')} className="text-white hover:bg-white/10">
+                                Login
+                            </Button>
+                        )}
                     </div>
                 </div>
             </header>
@@ -159,6 +218,19 @@ export default function StorefrontClient() {
                         {/* Actions */}
                         <div className="flex gap-3 pb-4 w-full md:w-auto justify-center md:justify-end">
                             <Button className="bg-white text-black hover:bg-zinc-200">Follow</Button>
+                            <Button
+                                className="bg-rose-600/90 text-white hover:bg-rose-600 border border-white/10"
+                                onClick={() => startInquiryChat(store.id)}
+                            >
+                                <MessageCircle className="mr-2 h-4 w-4" /> Contact
+                            </Button>
+                            {store.founder_name && (
+                                <Link href={`/shops/${store.slug}/visionary`}>
+                                    <Button variant="outline" className="text-white border-white/20 hover:bg-white/10">
+                                        The Visionary
+                                    </Button>
+                                </Link>
+                            )}
                             <Button variant="outline" className="text-white border-white/20 hover:bg-white/10">Share</Button>
                         </div>
                     </div>
@@ -187,8 +259,20 @@ export default function StorefrontClient() {
             </section>
 
             {/* Product Grid */}
-            <section className="px-6 pb-32">
+            <section className="px-6 py-24 bg-black">
                 <div className="max-w-7xl mx-auto">
+                    <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+                        <div>
+                            <h4 className="text-rose-500 text-xs font-bold uppercase tracking-[0.2em] mb-2">Editor's Choice</h4>
+                            <h3 className="text-3xl sm:text-4xl font-serif font-bold text-white">
+                                {store.founder_name ? `Curated by ${store.founder_name.split(' ')[0]}` : 'Selected Drops'}
+                            </h3>
+                        </div>
+                        <Link href="/" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors border-b border-zinc-800 pb-1">
+                            View All Drops
+                        </Link>
+                    </div>
+
                     {filteredProducts.length === 0 ? (
                         <div className="text-center py-20 border border-dashed border-white/10 rounded-xl">
                             <p className="text-zinc-500 text-lg">No products found in this category.</p>

@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/cart-context";
+import { ChatProvider } from "@/providers/chat-provider";
+import { NotificationProvider } from '@/providers/notification-provider'
+import { ChatSheet } from "@/components/chat/chat-sheet";
+import { FloatingChatButton } from "@/components/chat/floating-chat-button";
 import { CartSheet } from "@/components/cart/cart-sheet";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -87,9 +91,17 @@ export default function RootLayout({
                 className={`${playfair.variable} ${inter.variable} font-sans antialiased bg-background text-foreground`}
             >
                 <CartProvider>
-                    <CartSheet />
-                    {children}
-                    <Toaster />
+                    <ChatProvider>
+                        <NotificationProvider>
+                            <main className="min-h-screen bg-background font-sans antialiased relative">
+                                <CartSheet />
+                                {children}
+                            </main>
+                            <Toaster />
+                            <FloatingChatButton />
+                            <ChatSheet />
+                        </NotificationProvider>
+                    </ChatProvider>
                 </CartProvider>
             </body>
         </html>

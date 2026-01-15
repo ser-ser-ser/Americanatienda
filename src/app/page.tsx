@@ -2,8 +2,10 @@
 
 import { createClient } from '@/utils/supabase/client'
 import Link from 'next/link'
-import { ArrowRight, Sparkles, User, ShoppingBag, Instagram, Play } from 'lucide-react'
+import { ArrowRight, Sparkles, User, ShoppingBag, Instagram, Play, Search, Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from "@/components/ui/input"
+import { useCart } from '@/context/cart-context'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -18,11 +20,16 @@ import {
 // This allows the page to be statically exported while fetching data client-side
 // export const revalidate = 3600
 
+import { NotificationBell } from '@/components/ui/notification-bell'
+
 export default function Home() {
     const supabase = createClient()
+    const { toggleCart, cartCount } = useCart()
+    const [user, setUser] = useState<any>(null)
     const [stores, setStores] = useState<any[]>([])
     const [content, setContent] = useState<Record<string, string>>({})
-    const [categories, setCategories] = useState<{ label: string, link: string }[]>([])
+    const [navLinks, setNavLinks] = useState<{ label: string, link: string }[]>([])
+    const [dbCategories, setDbCategories] = useState<any[]>([])
 
     const [featuredProducts, setFeaturedProducts] = useState<any[]>([])
 
@@ -33,9 +40,17 @@ export default function Home() {
 
     useEffect(() => {
         const fetchData = async () => {
+            // Check User
+            const { data: { user } } = await supabase.auth.getUser()
+            setUser(user)
+
             // Fetch Stores
             const { data: storesData } = await supabase.from('stores').select('*')
             if (storesData) setStores(storesData)
+
+            // Fetch Categories (DB)
+            const { data: catsData } = await supabase.from('categories').select('*').order('created_at', { ascending: true })
+            if (catsData) setDbCategories(catsData)
 
             // Fetch Featured Products (Marketplace Feed)
             const { data: featured } = await supabase
@@ -59,24 +74,24 @@ export default function Home() {
                 }, {})
                 setContent(contentMap)
 
-                // Parse Categories
+                // Parse Nav Links
                 if (contentMap['nav_categories']) {
                     try {
-                        setCategories(JSON.parse(contentMap['nav_categories']))
+                        setNavLinks(JSON.parse(contentMap['nav_categories']))
                     } catch (e) {
-                        // Fallback default
-                        setCategories([
-                            { label: 'Curations', link: '#' },
-                            { label: 'Editorial', link: '#' },
-                            { label: 'The Club', link: '#' }
+                        setNavLinks([
+                            { label: 'Categories', link: '/collections' },
+                            { label: 'Stores', link: '/shops' },
+                            { label: 'Editorial', link: '/editorial' },
+                            { label: 'The Club', link: '/club' }
                         ])
                     }
                 } else {
-                    // Default
-                    setCategories([
-                        { label: 'Curations', link: '#' },
-                        { label: 'Editorial', link: '#' },
-                        { label: 'The Club', link: '#' }
+                    setNavLinks([
+                        { label: 'Categories', link: '/collections' },
+                        { label: 'Stores', link: '/shops' },
+                        { label: 'Editorial', link: '/editorial' },
+                        { label: 'The Club', link: '/club' }
                     ])
                 }
             }
@@ -139,20 +154,69 @@ export default function Home() {
                     </motion.div>
 
                     <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-300">
-                        <Link href="/categories" className="hover:text-primary transition-colors hover:shadow-[0_0_20px_var(--primary)]">Categorías</Link>
-                        <Link href="#" className="hover:text-primary transition-colors hover:shadow-[0_0_20px_var(--primary)]">Editorial</Link>
-                        <Link href="#" className="hover:text-primary transition-colors hover:shadow-[0_0_20px_var(--primary)]">El Club</Link>
-                        <Link href="/shops" className="hover:text-primary transition-colors hover:shadow-[0_0_20px_var(--primary)]">Tiendas</Link>
+                        {navLinks.map((cat, idx) => (
+                            <Link key={idx} href={cat.link} className="hover:text-primary transition-colors hover:shadow-[0_0_20px_var(--primary)]">
+                                {cat.label}
+                            </Link>
+                        ))}
                     </nav>
 
+
                     <div className="flex items-center gap-4">
-                        <Link href="/login" className="hidden md:inline-flex">
+                        {/* Search Bar (Desktop) */}
+                        <div className="hidden lg:flex items-center bg-white/5 rounded-full px-4 h-10 border border-white/10 hover:border-white/20 transition-colors w-64">
+                            <Search className="h-4 w-4 text-zinc-400 mr-2" />
+                            <input
+                                type="text"
+                                placeholder="Search products, stores..."
+                                className="bg-transparent border-none outline-none text-sm text-white placeholder:text-zinc-500 w-full"
+                            />
+                        </div>
+
+
+
+                        {/* Favorites */}
+                        <Link href="/favorites">
                             <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
-                                <User className="h-5 w-5" />
+                                <Heart className="h-5 w-5" />
                             </Button>
                         </Link>
-                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
+
+                        <div className="text-white">
+                            <NotificationBell />
+                        </div>
+
+                        {/* Auth Button / User Profile */}
+                        <Link href={user ? "/dashboard" : "/login"} className="hidden md:inline-flex items-center gap-2">
+                            {user ? (
+                                <div className="flex items-center gap-2 pl-2 pr-4 py-1.5 bg-white/10 rounded-full border border-white/5 hover:bg-white/20 transition-all">
+                                    <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-rose-500 to-orange-500 flex items-center justify-center text-[10px] font-bold text-white">
+                                        {user.email?.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span className="text-xs font-medium text-white max-w-[100px] truncate">
+                                        {user.email?.split('@')[0]}
+                                    </span>
+                                </div>
+                            ) : (
+                                <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full">
+                                    <User className="h-5 w-5" />
+                                </Button>
+                            )}
+                        </Link>
+
+                        {/* Cart Button with Toggle */}
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-white hover:bg-white/10 rounded-full relative"
+                            onClick={toggleCart}
+                        >
                             <ShoppingBag className="h-5 w-5" />
+                            {cartCount > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">
+                                    {cartCount}
+                                </span>
+                            )}
                         </Button>
 
                         {/* Mobile Menu */}
@@ -165,12 +229,15 @@ export default function Home() {
                                 </SheetTrigger>
                                 <SheetContent side="right" className="bg-zinc-950 border-white/10 text-white">
                                     <nav className="flex flex-col gap-6 mt-10 text-lg font-medium">
-                                        <Link href="/categories" className="text-primary transition-colors">Categorías</Link>
-                                        <Link href="#" className="hover:text-primary transition-colors">Editorial</Link>
-                                        <Link href="#" className="hover:text-primary transition-colors">El Club</Link>
-                                        <Link href="/shops" className="hover:text-primary transition-colors">Tiendas</Link>
+                                        {navLinks.map((cat, idx) => (
+                                            <Link key={idx} href={cat.link} className="hover:text-primary transition-colors">
+                                                {cat.label}
+                                            </Link>
+                                        ))}
                                         <div className="h-px bg-white/10 my-2" />
-                                        <Link href="/login" className="hover:text-primary transition-colors flex items-center gap-2"><User className="h-4 w-4" /> My Account</Link>
+                                        <Link href={user ? "/dashboard" : "/login"} className="hover:text-primary transition-colors flex items-center gap-2">
+                                            <User className="h-4 w-4" /> {user ? 'My Dashboard' : 'My Account'}
+                                        </Link>
                                     </nav>
                                 </SheetContent>
                             </Sheet>
@@ -191,7 +258,7 @@ export default function Home() {
 
                 <h1 className="text-6xl md:text-9xl font-serif font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-zinc-200 to-zinc-600 mb-6 drop-shadow-2xl">
                     {content['home_hero_title'] || 'AMERICANA'} <br />
-                    <span className="italic font-light text-white">{content['home_hero_subtitle'] || 'DESIRE'}</span>
+                    <span className="italic font-light text-white">{content['home_hero_subtitle'] || 'REDIFINE'}</span>
                 </h1>
 
                 <p className="text-xl md:text-2xl text-zinc-300 max-w-2xl mx-auto mb-12 font-light leading-relaxed mix-blend-plus-lighter">
@@ -199,7 +266,7 @@ export default function Home() {
                 </p>
 
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Link href={content['home_hero_cta_link'] || '/shops'}>
+                    <Link href="#categories">
                         <Button size="lg" className="bg-white text-black hover:bg-zinc-200 text-lg px-8 py-6 rounded-full font-bold tracking-tight shadow-[0_0_40px_-5px_rgba(255,255,255,0.4)] transition-all">
                             {content['home_hero_cta_label'] || 'Explore The Collections'}
                         </Button>
@@ -207,65 +274,71 @@ export default function Home() {
                 </motion.div>
             </motion.section>
 
-            {/* Stores Grid - "The Portals" */}
-            <section className="relative z-20 py-32 bg-black">
+            {/* 2. CATEGORIES GRID (Replacing Stores Grid) */}
+            <section id="categories" className="relative z-20 py-32 bg-black">
                 <div className="container mx-auto px-6">
+                    <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
+                        <div>
+                            <span className="text-primary text-sm font-bold uppercase tracking-widest block mb-2">Descubre</span>
+                            <h2 className="text-3xl md:text-5xl font-serif font-bold text-white">Categorías Populares</h2>
+                        </div>
+                        <Link href="/collections">
+                            <Button variant="outline" className="text-white border-white/20 hover:bg-white hover:text-black">
+                                Ver todas
+                            </Button>
+                        </Link>
+                    </div>
+
                     <motion.div
                         initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true, margin: "-100px" }}
                         variants={containerVariants}
-                        className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-6xl mx-auto"
+                        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto"
                     >
-                        {stores?.map((store, index) => {
-                            // Determine Dynamic Cover Image based on slug
-                            let dynamicCover = null
-                            if (store.slug === 'the-red-room') dynamicCover = content['store_cover_sex']
-                            if (store.slug === 'the-lounge') dynamicCover = content['store_cover_smoke']
+                        {dbCategories?.map((category, index) => {
+                            const mediaUrl = category.image_url
 
                             return (
-                                <motion.div variants={itemVariants} key={store.id}>
+                                <motion.div variants={itemVariants} key={category.id}>
                                     <div className="group block relative aspect-[4/5] rounded-[2rem] overflow-hidden border border-white/10">
-                                        {/* Store Image / Video Placeholder */}
-                                        <div className="absolute inset-0 bg-zinc-900 transition-transform duration-700 group-hover:scale-110">
-                                            {dynamicCover ? (
-                                                dynamicCover.match(/\.(mp4|webm|ogg)$/i) ? (
-                                                    <video src={dynamicCover} autoPlay muted loop playsInline className="w-full h-full object-cover opacity-70 group-hover:opacity-50 transition-opacity" />
+                                        {/* Category Media */}
+                                        <div className="absolute inset-0 bg-zinc-900 transition-transform duration-700 group-hover:scale-105">
+                                            {mediaUrl ? (
+                                                mediaUrl.match(/\.(mp4|webm|ogg)$/i) || mediaUrl.includes('cloudinary') && mediaUrl.includes('video') ? (
+                                                    <video
+                                                        src={mediaUrl}
+                                                        autoPlay
+                                                        muted
+                                                        loop
+                                                        playsInline
+                                                        className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity"
+                                                    />
                                                 ) : (
-                                                    <img src={dynamicCover} alt={store.name} className="w-full h-full object-cover opacity-70 group-hover:opacity-50 transition-opacity" />
+                                                    <img src={mediaUrl} alt={category.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-60 transition-opacity" />
                                                 )
-                                            ) : store.image_url ? (
-                                                <img src={store.image_url} alt={store.name} className="w-full h-full object-cover opacity-70 group-hover:opacity-50 transition-opacity" />
                                             ) : (
-                                                <div className={`w-full h-full bg-gradient-to-br ${index === 0 ? 'from-pink-900 via-black to-purple-900' : 'from-green-900 via-black to-yellow-900'}`} />
+                                                <div className={`w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950`} />
                                             )}
                                         </div>
 
-                                        {/* Hover Overlay */}
-                                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
-
-                                        {/* Content Wrapper - Using div to handle spacing, Link is on the button */}
-                                        <div className="absolute inset-0 p-12 flex flex-col justify-between pointer-events-none">
-                                            <div className="flex justify-between items-start">
-                                                <div className="px-4 py-1 rounded-full border border-white/20 bg-black/30 backdrop-blur-md text-xs font-bold uppercase tracking-widest text-white">
-                                                    {store.slug === 'the-red-room' ? 'The Red Room' : 'The Lounge'}
-                                                </div>
-                                                <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all">
-                                                    <ArrowRight className="h-5 w-5 -rotate-45 group-hover:rotate-0 transition-transform duration-300" />
-                                                </div>
-                                            </div>
-
+                                        {/* Content Wrapper */}
+                                        <div className="absolute inset-0 p-8 flex flex-col justify-end pointer-events-none">
                                             <div>
-                                                <h3 className="text-2xl font-serif font-bold text-white mb-2">{store.slug === 'the-red-room' ? 'The Red Room' : 'The Lounge'}</h3>
-                                                <p className="text-zinc-300 mb-6">{store.description}</p>
-                                                <Button asChild className={`w-full text-white border-0 pointer-events-auto ${store.slug === 'the-red-room' ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}>
-                                                    <Link href={`/shops/${store.slug}`}>Enter {store.slug === 'the-red-room' ? 'Red Room' : 'Lounge'}</Link>
-                                                </Button>
+                                                <div className="flex justify-between items-end">
+                                                    <div>
+                                                        <h3 className="text-2xl font-serif font-bold text-white mb-1 group-hover:text-rose-500 transition-colors">{category.name}</h3>
+                                                        <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">View Collection</p>
+                                                    </div>
+                                                    <div className="h-10 w-10 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all">
+                                                        <ArrowRight className="h-5 w-5 -rotate-45 group-hover:rotate-0 transition-transform duration-300" />
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Full Card Clickable Overlay (Alternative to nested Link) */}
-                                        <Link href={`/shops/${store.slug}`} className="absolute inset-0 z-10" aria-label={`Enter ${store.name}`} />
+                                        {/* Full Card Clickable Overlay */}
+                                        <Link href={`/collections/${category.slug}`} className="absolute inset-0 z-10" aria-label={`View ${category.name}`} />
                                     </div>
                                 </motion.div>
                             )
@@ -274,8 +347,7 @@ export default function Home() {
                 </div>
             </section >
 
-            {/* Instagram / Social Proof Section */}
-            {/* Instagram / Social Proof Section */}
+            {/* 3. Instagram / Social Proof Section */}
             <section className="relative z-20 py-24 border-t border-white/5 bg-zinc-950">
                 <div className="container mx-auto px-6">
                     <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
@@ -329,43 +401,65 @@ export default function Home() {
                 </div>
             </section>
 
-            {/* Marketplace Highlights */}
-            <section className="py-24 px-6 bg-zinc-950">
+
+            {/* 4. STORES / PORTALS (Swapped from Top) */}
+            <section className="py-24 px-6 bg-zinc-950 border-t border-white/5">
                 <div className="max-w-7xl mx-auto space-y-12">
-                    <div className="text-center space-y-4">
-                        <span className="text-primary text-sm font-bold uppercase tracking-widest">Curated for You</span>
-                        <h2 className="text-4xl md:text-5xl font-serif font-bold text-white">Marketplace Favorites</h2>
-                        <p className="text-zinc-400 max-w-2xl mx-auto">
-                            Strictly filtered selection from our most exclusive vendors.
-                        </p>
+                    <div className="flex flex-col md:flex-row items-end justify-between mb-8 gap-6 px-4 md:px-0">
+                        <div className="text-left">
+                            <span className="text-primary text-sm font-bold uppercase tracking-widest block mb-2">The Portals</span>
+                            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white">Stores</h2>
+                        </div>
+                        <Link href="/shops">
+                            <Button variant="outline" className="border-white/10 text-zinc-400 hover:bg-white hover:text-black rounded-full px-8">
+                                Ver más
+                            </Button>
+                        </Link>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-12 gap-x-6">
-                        {featuredProducts.length > 0 ? (
-                            featuredProducts.map(product => (
-                                <Link key={product.id} href={`/shops/${product.stores?.slug}/${product.store_categories?.slug}/${product.slug}`} className="group">
-                                    <div className="aspect-[4/5] bg-zinc-900 rounded-lg overflow-hidden mb-4 relative">
-                                        {product.images?.[0] && (
-                                            <Image
-                                                src={product.images[0]}
-                                                alt={product.name}
-                                                fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                        {stores?.map((store, index) => {
+                            const mediaUrl = store.cover_video_url || store.cover_image_url
+
+                            return (
+                                <Link key={store.id} href={`/shops/${store.slug}`} className="group block relative aspect-video md:aspect-[2/1] bg-zinc-900 rounded-3xl overflow-hidden border border-white/10 hover:border-white/30 transition-all">
+                                    {/* Background */}
+                                    {mediaUrl ? (
+                                        mediaUrl.match(/\.(mp4|webm|ogg)$/i) || mediaUrl.includes('cloudinary') && mediaUrl.includes('video') ? (
+                                            <video
+                                                src={mediaUrl}
+                                                autoPlay muted loop playsInline
+                                                className="w-full h-full object-cover opacity-50 group-hover:opacity-40 transition-opacity duration-700"
                                             />
+                                        ) : (
+                                            <img src={mediaUrl} alt={store.name} className="w-full h-full object-cover opacity-50 group-hover:opacity-40 transition-opacity duration-700" />
+                                        )
+                                    ) : (
+                                        <div className={`w-full h-full bg-gradient-to-br ${index % 2 === 0 ? 'from-rose-900/40 via-black to-black' : 'from-emerald-900/40 via-black to-black'}`} />
+                                    )}
+
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+
+                                    <div className="absolute inset-0 p-8 flex flex-col justify-end items-start tracking-wide">
+                                        <div className="px-3 py-1 bg-white/10 backdrop-blur rounded-full text-xs font-bold uppercase text-white mb-3">
+                                            Portal {index + 1}
+                                        </div>
+                                        <h3 className="text-3xl font-serif font-bold text-white italic group-hover:text-primary transition-colors">
+                                            {store.name}
+                                        </h3>
+                                        {store.description && (
+                                            <p className="text-zinc-400 text-sm mt-2 max-w-md line-clamp-2">
+                                                {store.description}
+                                            </p>
                                         )}
-                                        <div className="absolute top-2 right-2 bg-black/50 backdrop-blur px-2 py-1 rounded text-xs font-bold uppercase text-white">
-                                            {product.stores?.name}
+
+                                        <div className="mt-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-white/50 group-hover:text-white transition-colors">
+                                            Enter Portal <ArrowRight className="h-4 w-4" />
                                         </div>
                                     </div>
-                                    <h3 className="text-lg font-serif font-bold text-white group-hover:text-primary transition-colors">{product.name}</h3>
-                                    <p className="text-zinc-500">${product.price}</p>
                                 </Link>
-                            ))
-                        ) : (
-                            <div className="col-span-full text-center py-12 border border-dashed border-zinc-800 rounded-2xl">
-                                <p className="text-zinc-500 italic">Curating best sellers...</p>
-                            </div>
-                        )}
+                            )
+                        })}
                     </div>
                 </div>
             </section>
