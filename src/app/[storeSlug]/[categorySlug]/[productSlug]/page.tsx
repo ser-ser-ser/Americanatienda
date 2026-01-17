@@ -1,6 +1,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowLeft, ShoppingCart, Star, ShieldCheck, Truck, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { notFound } from 'next/navigation'
@@ -84,10 +85,12 @@ export default async function ProductPage({ params }: { params: Promise<{ storeS
                     <div className="space-y-4">
                         <div className="aspect-[4/5] rounded-[2rem] overflow-hidden border border-white/10 relative bg-zinc-900 group">
                             {product.image_url ? (
-                                <img
+                                <Image
                                     src={product.image_url}
                                     alt={product.name}
-                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                    fill
+                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                    className="object-cover transition-transform duration-700 group-hover:scale-105"
                                 />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-zinc-700">No Image</div>
