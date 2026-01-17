@@ -177,13 +177,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         // simplified logic: check local conversations
         const existing = conversations.find(c => c.type === 'support')
         if (existing) {
-            console.log('Opening existing support chat', existing.id)
             setActiveConversationId(existing.id)
             setIsOpen(true)
             return
         }
 
-        console.log('Creating new support chat for user', user.id)
         // Create new support conversation
         const { data: conv, error } = await supabase
             .from('conversations')
