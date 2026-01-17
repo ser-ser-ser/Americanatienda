@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import Link from 'next/link'
-import { ArrowLeft, CreditCard, ShieldCheck, Lock, Loader2, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, CreditCard, ShieldCheck, Lock, Loader2, CheckCircle2, MapPin } from 'lucide-react'
+import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
@@ -19,7 +20,18 @@ export default function CheckoutPage() {
     // Form States
     const [email, setEmail] = useState('')
     const [name, setName] = useState('')
+    const [phone, setPhone] = useState('')
+
+    // Identity / Business
+    const [isBusiness, setIsBusiness] = useState(false)
+    const [rfc, setRfc] = useState('')
+    const [businessName, setBusinessName] = useState('')
+
+    // Address
     const [address, setAddress] = useState('')
+    const [street2, setStreet2] = useState('')
+    const [colonia, setColonia] = useState('')
+    const [crossStreets, setCrossStreets] = useState('')
     const [city, setCity] = useState('')
     const [zip, setZip] = useState('')
 
@@ -47,11 +59,7 @@ export default function CheckoutPage() {
         e.preventDefault()
         setLoading(true)
 
-        // Simple Validation for "Test Mode"
-        if (cardNumber.replace(/\s/g, '') !== '4242424242424242') {
-            toast.error("Payment Failed", {
-                description: "Please use the Stripe Test Card (4242 4242 4242 4242) for this demo."
-            })
+        if (items.length === 0) {
             setLoading(false)
             return
         }
@@ -61,28 +69,72 @@ export default function CheckoutPage() {
 
             if (!user) {
                 toast.error("Please login to checkout")
-                // In real app, offer guest checkout or redirect to login
                 setLoading(false)
                 return
             }
 
-            // Create Order in Supabase
-            const { data: order, error } = await supabase
-                .from('orders')
+            // 1. SAVE ADDRESS (Polymorphic: linked to Profile)
+            const { data: addressData, error: addressError } = await supabase
+                .from('addresses')
                 .insert({
-                    user_id: user.id,
-                    total_amount: cartTotal,
-                    status: 'processing', // Initial status
-                    status: 'processing' // Initial status
+                    profile_id: user.id,
+                    type: 'home', // Defaulting for now, could be a selector
+                    contact_name: name,
+                    contact_phone: phone,
+                    street_line_1: address,
+                    street_line_2: street2,
+                    colonia: colonia,
+                    cross_streets: crossStreets,
+                    city: city,
+                    postal_code: zip,
+                    state: 'MX', // Default
+                    country: 'MX'
                 })
                 .select()
                 .single()
 
-            if (error) throw error
+            if (addressError) throw new Error(`Address Error: ${addressError.message}`)
 
-            // Create Order Items (optional relational table if schema demands it, 
-            // but relying on JSONB 'items' column in 'orders' is easier for MVP unless we have strict normalization)
-            // Assuming we also want rows in 'order_items' based on previous context:
+            // 2. UPDATE PROFILE (Identity / Tax)
+            // Only if Business Mode is active or we captured new phone data
+            if (isBusiness || phone) {
+                const updateData: any = {}
+                if (phone) updateData.phone_verified = true // Self-asserted for now
+                if (isBusiness) {
+                    updateData.is_business = true
+                    updateData.tax_id = rfc
+                    updateData.business_name = businessName
+                }
+
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .update(updateData)
+                    .eq('id', user.id)
+
+                if (profileError) console.error("Profile update warning:", profileError)
+            }
+
+            // 3. CALCULATE SHIPPING (Simple "Same City" Heuristic for now)
+            // In a real app, we'd fetch the store's location and calculate distance.
+            // For MVP, we'll assume standard shipping if we don't have the complex geometric calc ready.
+            const shippingCost = 0.00 // Placeholder for the calculation logic
+
+            // 4. CREATE ORDER
+            const { data: order, error: orderError } = await supabase
+                .from('orders')
+                .insert({
+                    user_id: user.id,
+                    total_amount: cartTotal + shippingCost,
+                    shipping_cost: shippingCost,
+                    shipping_address_id: addressData.id,
+                    status: 'processing'
+                })
+                .select()
+                .single()
+
+            if (orderError) throw orderError
+
+            // 5. CREATE ORDER ITEMS
             const orderItemsData = items.map(item => ({
                 order_id: order.id,
                 product_id: item.product.id,
@@ -94,23 +146,17 @@ export default function CheckoutPage() {
                 .from('order_items')
                 .insert(orderItemsData)
 
-            if (itemsError) {
-                console.error('Error saving items relation (FULL):', itemsError)
-                console.error('Error saving items relation (JSON):', JSON.stringify(itemsError, null, 2))
-                // Try to continue anyway since order uses JSON 'items' (deprecated) or just warn
-                toast.error("Order created but items failed to save.", { description: itemsError.message })
-            }
+            if (itemsError) throw itemsError
 
-            // Success!
+            // SUCCESS
             toast.success("Order Placed Successfully!")
             clearCart()
             router.push('/dashboard/buyer')
 
         } catch (error: any) {
-            console.error("FULL ERROR OBJECT:", error)
-            console.error("Error Stringified:", JSON.stringify(error, null, 2)) // Capture everything
+            console.error("Checkout Error:", error)
             toast.error("Checkout Failed", {
-                description: error.message || error.error_description || "Unknown error occurred"
+                description: error.message || "Something went wrong"
             })
         } finally {
             setLoading(false)
@@ -166,31 +212,121 @@ export default function CheckoutPage() {
                             </div>
                         </section>
 
-                        {/* Section 2: Shipping */}
-                        <section className="space-y-4">
-                            <h2 className="text-lg font-bold">Shipping Address</h2>
+                        {/* Section 2: Shipping & Identity */}
+                        <section className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-bold">Shipping Address</h2>
+                                <div className="flex items-center space-x-2">
+                                    <Switch id="business-mode" onCheckedChange={(c) => setIsBusiness(c)} />
+                                    <Label htmlFor="business-mode" className="text-sm text-zinc-400">I need an Invoice (RFC)</Label>
+                                </div>
+                            </div>
+
                             <div className="grid gap-4">
+                                {/* Identity */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name">Full Name / Receiver</Label>
+                                        <Input
+                                            id="name"
+                                            required
+                                            value={name}
+                                            onChange={e => setName(e.target.value)}
+                                            className="bg-black border-white/10 h-11 focus:border-[#ff007f]"
+                                            placeholder="Who receives?"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="phone">Phone Number</Label>
+                                        <Input
+                                            id="phone"
+                                            required
+                                            type="tel"
+                                            value={phone}
+                                            onChange={e => setPhone(e.target.value)}
+                                            className="bg-black border-white/10 h-11 focus:border-[#ff007f]"
+                                            placeholder="+52 55..."
+                                        />
+                                    </div>
+                                </div>
+
+                                {isBusiness && (
+                                    <div className="grid grid-cols-2 gap-4 p-4 bg-zinc-900/50 rounded-lg border border-zinc-800 animate-in fade-in slide-in-from-top-2">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="rfc" className="text-[#ff007f]">RFC (Tax ID)</Label>
+                                            <Input
+                                                id="rfc"
+                                                required={isBusiness}
+                                                value={rfc}
+                                                onChange={e => setRfc(e.target.value.toUpperCase())}
+                                                className="bg-black border-white/10 h-11 focus:border-[#ff007f]"
+                                                placeholder="XAXX010101000"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="businessName">Legal Name (Razón Social)</Label>
+                                            <Input
+                                                id="businessName"
+                                                required={isBusiness}
+                                                value={businessName}
+                                                onChange={e => setBusinessName(e.target.value)}
+                                                className="bg-black border-white/10 h-11 focus:border-[#ff007f]"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Location */}
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Full Name</Label>
+                                    <Label htmlFor="address">Street & Number</Label>
+                                    <div className="relative">
+                                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                                        <Input
+                                            id="address"
+                                            required
+                                            placeholder="Av. Reforma 222"
+                                            value={address}
+                                            onChange={e => setAddress(e.target.value)}
+                                            className="bg-black border-white/10 h-11 pl-10 focus:border-[#ff007f]"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="street2">Interior / Apt (Optional)</Label>
+                                        <Input
+                                            id="street2"
+                                            value={street2}
+                                            onChange={e => setStreet2(e.target.value)}
+                                            className="bg-black border-white/10 h-11 focus:border-[#ff007f]"
+                                            placeholder="Dept 402"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="colonia">Colonia (Neighborhood)</Label>
+                                        <Input
+                                            id="colonia"
+                                            required
+                                            value={colonia}
+                                            onChange={e => setColonia(e.target.value)}
+                                            className="bg-black border-white/10 h-11 focus:border-[#ff007f]"
+                                            placeholder="Juárez"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="crossStreets">Cross Streets & References</Label>
                                     <Input
-                                        id="name"
-                                        required
-                                        value={name}
-                                        onChange={e => setName(e.target.value)}
-                                        className="bg-black border-white/10 h-11 focus:border-pink-500"
+                                        id="crossStreets"
+                                        value={crossStreets}
+                                        onChange={e => setCrossStreets(e.target.value)}
+                                        className="bg-black border-white/10 h-11 focus:border-[#ff007f]"
+                                        placeholder="Between Havre and Niza. White building."
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="address">Address</Label>
-                                    <Input
-                                        id="address"
-                                        required
-                                        placeholder="123 Fashion St"
-                                        value={address}
-                                        onChange={e => setAddress(e.target.value)}
-                                        className="bg-black border-white/10 h-11 focus:border-pink-500"
-                                    />
-                                </div>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <Label htmlFor="city">City</Label>
@@ -199,7 +335,8 @@ export default function CheckoutPage() {
                                             required
                                             value={city}
                                             onChange={e => setCity(e.target.value)}
-                                            className="bg-black border-white/10 h-11 focus:border-pink-500"
+                                            className="bg-black border-white/10 h-11 focus:border-[#ff007f]"
+                                            placeholder="Mexico City"
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -209,7 +346,8 @@ export default function CheckoutPage() {
                                             required
                                             value={zip}
                                             onChange={e => setZip(e.target.value)}
-                                            className="bg-black border-white/10 h-11 focus:border-pink-500"
+                                            className="bg-black border-white/10 h-11 focus:border-[#ff007f]"
+                                            placeholder="06600"
                                         />
                                     </div>
                                 </div>

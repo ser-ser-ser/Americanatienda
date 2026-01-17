@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { useVendor } from '@/providers/vendor-provider'
 import Link from 'next/link'
+import { ShippingSettingsDialog } from '@/components/vendor/shipping-settings-dialog'
 
 export default function ShippingManagementPage() {
     const { activeStore } = useVendor()
@@ -94,9 +95,7 @@ export default function ShippingManagementPage() {
                         <p className="text-zinc-400 mt-1">Handle your active fulfillment pipeline and track real-time deliveries.</p>
                     </div>
                     <div className="flex gap-3">
-                        <Button variant="outline" size="icon" className="border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800">
-                            <AlertCircle className="h-5 w-5" />
-                        </Button>
+                        <ShippingSettingsDialog />
                         <Button className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold">
                             <Plus className="mr-2 h-4 w-4" /> New Shipment
                         </Button>
