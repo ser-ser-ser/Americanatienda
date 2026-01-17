@@ -45,11 +45,11 @@ export default function Home() {
             setUser(user)
 
             // Fetch Stores
-            const { data: storesData } = await supabase.from('stores').select('*')
+            const { data: storesData } = await supabase.from('stores').select('id, name, slug, description, cover_image_url, cover_video_url')
             if (storesData) setStores(storesData)
 
             // Fetch Categories (DB)
-            const { data: catsData } = await supabase.from('categories').select('*').order('created_at', { ascending: true })
+            const { data: catsData } = await supabase.from('categories').select('id, name, slug, image_url, created_at').order('created_at', { ascending: true })
             if (catsData) setDbCategories(catsData)
 
             // Fetch Featured Products (Marketplace Feed)
