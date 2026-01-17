@@ -21,15 +21,23 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
-        // 2. Get User's Store
-        const { data: store } = await supabase
-            .from('stores')
-            .select('*')
-            .eq('owner_id', user.id)
-            .single()
+        // 2. Get User's Store (Specific Store Logic)
+        const { storeId } = await req.json().catch(() => ({ storeId: null }))
+
+        let query = supabase.from('stores').select('*').eq('owner_id', user.id)
+
+        // If storeId is provided, enforce it (Security check: it must still belong to owner)
+        if (storeId) {
+            query = query.eq('id', storeId)
+        }
+
+        const { data: store, error: storeError } = await query.maybeSingle()
+
+        if (storeError) throw storeError
 
         if (!store) {
-            return NextResponse.json({ error: 'No store found' }, { status: 404 })
+            // Need a better error if they have NO stores vs wrong ID
+            return NextResponse.json({ error: 'Store not found or access denied.' }, { status: 404 })
         }
 
         // 3. Check if already has account, if not Create one

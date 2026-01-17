@@ -82,18 +82,22 @@ export async function POST(req: Request) {
         }
 
         // 6. Handle Stripe Connect (Payment Split)
+        // 6. Handle Stripe Connect (Payment Split)
         if (store.stripe_account_id) {
             sessionConfig.payment_intent_data = {
                 application_fee_amount: appFeeAmount,
                 transfer_data: {
                     destination: store.stripe_account_id,
                 },
+                // Show the Vendor's name on the statement (optional but good for trust)
+                // note: requires the connected account to have capabilities enabled
+                on_behalf_of: store.stripe_account_id,
             }
         } else {
-            // Fallback: If store is NOT connected, Platform keeps funds (or we block). 
-            // For safety/demo: We will allow it but funds stay in Platform, and we add a metadata flag.
-            // Ideally we should block regular vendors, but for "Admin" stores (Red Room) they might be platform owned as well.
-            sessionConfig.metadata!.payout_status = 'held_by_platform'
+            console.warn(`Vendor ${store.name} (${store.id}) is NOT connected to Stripe. Funds held by Platform.`)
+            // Fallback: If store is NOT connected, Platform keeps funds.
+            // We tag it so we can manually payout later if needed.
+            sessionConfig.metadata!.payout_status = 'held_by_platform_no_connect'
         }
 
         const session = await stripe.checkout.sessions.create(sessionConfig)

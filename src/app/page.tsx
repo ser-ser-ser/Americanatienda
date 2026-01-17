@@ -83,7 +83,7 @@ export default function Home() {
                             { label: 'Categories', link: '/collections' },
                             { label: 'Stores', link: '/shops' },
                             { label: 'Editorial', link: '/editorial' },
-                            { label: 'The Club', link: '/club' }
+                            { label: 'The Club', link: '/the-club' }
                         ])
                     }
                 } else {
@@ -91,7 +91,7 @@ export default function Home() {
                         { label: 'Categories', link: '/collections' },
                         { label: 'Stores', link: '/shops' },
                         { label: 'Editorial', link: '/editorial' },
-                        { label: 'The Club', link: '/club' }
+                        { label: 'The Club', link: '/the-club' }
                     ])
                 }
             }
@@ -253,22 +253,22 @@ export default function Home() {
             >
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-md text-xs font-bold text-primary mb-8 tracking-widest uppercase shadow-[0_0_30px_-5px_var(--primary)]">
                     <Sparkles className="h-3 w-3 animate-pulse" />
-                    <span>Est. 2026 • Exclusive Marketplace</span>
+                    <span>Est. 2026 • The Resistance</span>
                 </div>
 
                 <h1 className="text-6xl md:text-9xl font-serif font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-zinc-200 to-zinc-600 mb-6 drop-shadow-2xl">
                     {content['home_hero_title'] || 'AMERICANA'} <br />
-                    <span className="italic font-light text-white">{content['home_hero_subtitle'] || 'REDIFINE'}</span>
+                    <span className="italic font-light text-white">{content['home_hero_subtitle'] || 'REBEL. RESIST. EXIST.'}</span>
                 </h1>
 
                 <p className="text-xl md:text-2xl text-zinc-300 max-w-2xl mx-auto mb-12 font-light leading-relaxed mix-blend-plus-lighter">
-                    {content['home_hero_description'] || 'Where aesthetics meet indulgence. Explore curated collections for the modern provocateur.'}
+                    {content['home_hero_description'] || 'Join the anti-system. A decentralized marketplace for the irreverent, the self-sufficient, and the visionaries. Redefine consumption.'}
                 </p>
 
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Link href="#categories">
                         <Button size="lg" className="bg-white text-black hover:bg-zinc-200 text-lg px-8 py-6 rounded-full font-bold tracking-tight shadow-[0_0_40px_-5px_rgba(255,255,255,0.4)] transition-all">
-                            {content['home_hero_cta_label'] || 'Explore The Collections'}
+                            {content['home_hero_cta_label'] || 'Join the Rebellion'}
                         </Button>
                     </Link>
                 </motion.div>
@@ -279,8 +279,8 @@ export default function Home() {
                 <div className="container mx-auto px-6">
                     <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
                         <div>
-                            <span className="text-primary text-sm font-bold uppercase tracking-widest block mb-2">Descubre</span>
-                            <h2 className="text-3xl md:text-5xl font-serif font-bold text-white">Categorías Populares</h2>
+                            <span className="text-primary text-sm font-bold uppercase tracking-widest block mb-2">Arsenal</span>
+                            <h2 className="text-3xl md:text-5xl font-serif font-bold text-white">Suministros Rebeldes</h2>
                         </div>
                         <Link href="/collections">
                             <Button variant="outline" className="text-white border-white/20 hover:bg-white hover:text-black">
@@ -352,7 +352,7 @@ export default function Home() {
                 <div className="container mx-auto px-6">
                     <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
                         <div>
-                            <h3 className="text-3xl font-serif font-bold text-white mb-2">Follow The Culture</h3>
+                            <h3 className="text-3xl font-serif font-bold text-white mb-2">Join the Movement</h3>
                             <p className="text-zinc-400">@americanatienda • Join 50k+ connoisseurs</p>
                         </div>
                         <Button
@@ -407,8 +407,8 @@ export default function Home() {
                 <div className="max-w-7xl mx-auto space-y-12">
                     <div className="flex flex-col md:flex-row items-end justify-between mb-8 gap-6 px-4 md:px-0">
                         <div className="text-left">
-                            <span className="text-primary text-sm font-bold uppercase tracking-widest block mb-2">The Portals</span>
-                            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white">Stores</h2>
+                            <span className="text-primary text-sm font-bold uppercase tracking-widest block mb-2">Autonomous Zones</span>
+                            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white">Independent Cells</h2>
                         </div>
                         <Link href="/shops">
                             <Button variant="outline" className="border-white/10 text-zinc-400 hover:bg-white hover:text-black rounded-full px-8">

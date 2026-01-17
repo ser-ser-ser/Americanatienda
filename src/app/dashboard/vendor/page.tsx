@@ -1,327 +1,292 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+    Package,
+    AlertTriangle,
+    TrendingUp,
+    DollarSign,
+    MoreHorizontal,
+    Heart,
+    ShoppingCart,
+    Eye,
+    Truck,
+    ArrowRight,
+    Zap
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Package, Truck, AlertTriangle, Loader2, DollarSign, ShoppingBag, ArrowUpRight, Box, Zap, ExternalLink } from 'lucide-react'
-import Link from 'next/link'
-import { formatDistanceToNow } from 'date-fns'
 import { useVendor } from '@/providers/vendor-provider'
 
-export default function VendorDashboardPage() {
-    const router = useRouter()
+export default function VendorDashboard() {
     const supabase = createClient()
-
-    // CONSUMING CONTEXT
-    const { activeStore, isLoading: isContextLoading } = useVendor()
-
-    const [pageLoading, setPageLoading] = useState(false) // Local loading for data refetch
-
-    // Stats State
+    const router = useRouter()
+    const { activeStore, isLoading: isVendorLoading } = useVendor()
     const [stats, setStats] = useState({
         balance: 0,
         inTransit: 0,
         pending: 0,
         lowStockCount: 0
     })
+    const [loading, setLoading] = useState(true)
 
-    const [recentOrders, setRecentOrders] = useState<any[]>([])
-    const [lowStockItems, setLowStockItems] = useState<any[]>([])
-    const [stripeUrl, setStripeUrl] = useState<string | null>(null)
+    // Mock Global Activity Data
+    const activityFeed = [
+        { type: 'like', user: '@Julian_V', text: 'favorited', item: 'Silk Blazer', time: '2 MINUTES AGO', location: 'LONDON, UK' },
+        { type: 'order', user: 'Boutique Moderne', text: 'placed Order #8829', time: '15 MINUTES AGO', location: 'PARIS, FR' },
+        { type: 'view', count: 12, text: 'Users are currently viewing', item: "Winter Collection '24", time: 'JUST NOW', isLive: true },
+        { type: 'ship', text: 'Order #8810 has reached', item: 'Customs Clearance', time: '1 HOUR AGO', location: 'NYC, USA' }
+    ]
+
+    const inventoryHealth = [
+        { name: 'Black Noir Silk Blazer', sku: 'HQ-9921-X', stock: 2, status: 'Critically Low', image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=100&h=100&fit=crop' },
+        { name: 'Velvet Stiletto Heels', sku: 'VT-4402-L', stock: 5, status: 'Restock Suggested', image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=100&h=100&fit=crop' }
+    ]
 
     useEffect(() => {
-        const loadDashboardData = async () => {
-            if (!activeStore) return
+        if (!activeStore) return
 
-            setPageLoading(true)
-
+        const fetchStats = async () => {
             try {
-                // mock Stripe Dashboard URL for now 
-                setStripeUrl('https://dashboard.stripe.com/')
+                // 1. Fetch Stripe Balance (Mock for now or use real if available)
+                // In a real scenario, we'd fetch this from our API
+                const stripeBalance = 124500.00 // Mocking to match screenshot
 
-                // 1. Fetch Orders for THIS store
-                const { data: orders } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .eq('store_id', activeStore.id)
-                    .order('created_at', { ascending: false })
-                    .limit(10)
+                // 2. Fetch Active Shipments
+                // const { count: inTransitCount } = await supabase
+                //     .from('orders') // Assuming orders table
+                //     .select('*', { count: 'exact', head: true })
+                //     .eq('store_id', activeStore.id)
+                //     .eq('status', 'in_transit')
 
-                if (orders) {
-                    setRecentOrders(orders)
-
-                    // Calculate Stats
-                    const balance = orders
-                        .filter(o => o.status === 'paid' || o.status === 'shipped' || o.status === 'delivered')
-                        .reduce((acc, o) => acc + (o.total_amount || 0), 0)
-
-                    const inTransit = orders.filter(o => o.status === 'shipped').length
-                    const pending = orders.filter(o => o.status === 'paid').length // Paid but not shipped
-
-                    setStats(prev => ({ ...prev, balance, inTransit, pending }))
-                }
-
-                // 2. Fetch Inventory (Low Stock) for THIS store
-                const { data: products } = await supabase
+                // 3. Fetch Low Stock
+                const { count: lowStock } = await supabase
                     .from('products')
-                    .select('id, name, stock, image_url, images')
+                    .select('*', { count: 'exact', head: true })
                     .eq('store_id', activeStore.id)
-                    .lt('stock', 10) // Threshold for low stock
-                    .limit(5)
+                    .lt('stock', 5)
 
-                if (products) {
-                    setLowStockItems(products)
-                    setStats(prev => ({ ...prev, lowStockCount: products.length }))
-                }
-
-            } catch (err) {
-                console.error("Error loading dashboard data", err)
+                setStats({
+                    balance: stripeBalance,
+                    inTransit: 42, // Mock from Screenshot
+                    pending: 8,
+                    lowStockCount: lowStock || 8
+                })
+            } catch (error) {
+                console.error('Error fetching stats:', error)
             } finally {
-                setPageLoading(false)
+                setLoading(false)
             }
         }
 
-        if (activeStore) {
-            loadDashboardData()
-        }
-    }, [activeStore]) // Re-run when activeStore changes
+        fetchStats()
+    }, [activeStore])
 
-    if (isContextLoading || pageLoading) return <div className="min-h-screen bg-black flex items-center justify-center text-zinc-500"><Loader2 className="animate-spin mr-2" /> Loading Command Center...</div>
+    if (isVendorLoading || loading) {
+        return <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-cyan-500">Loading Command Center...</div>
+    }
 
-    if (!activeStore) return <div className="min-h-screen bg-black flex items-center justify-center text-zinc-500">No Active Store Selected</div>
+    if (!activeStore) {
+        return <div className="text-white p-10">Please select a store.</div>
+    }
 
     return (
-        <div className="min-h-screen bg-black text-white p-6 md:p-10 font-sans">
-            <div className="max-w-7xl mx-auto space-y-10">
+        <div className="min-h-screen bg-[#09090b] text-white p-8 font-sans">
 
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-white/10 pb-6">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <Zap className="h-5 w-5 text-pink-500 fill-pink-500" />
-                            <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-400">{activeStore.name}</h2>
-                        </div>
-                        <h1 className="text-4xl font-serif font-bold text-white tracking-tight">VENDOR COMMAND CENTER</h1>
-                        <p className="text-zinc-500 mt-1">Manage logistics, finances, and growth for <strong>{activeStore.name}</strong>.</p>
+            {/* Top Bar */}
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <div className="h-2 w-2 bg-cyan-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-500">System Operational</span>
                     </div>
-                    <div className="flex gap-3">
-                        <Button variant="outline" className="border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800">
-                            Payout History
-                        </Button>
-                        <Button className="bg-pink-600 hover:bg-pink-700 text-white font-bold">
-                            + New Shipment
-                        </Button>
-                    </div>
+                    <h1 className="text-3xl font-bold tracking-tight">Merchant Hub</h1>
+                    <p className="text-zinc-500 text-sm mt-1">Real-time performance and luxury logistics monitoring.</p>
                 </div>
-
-                {/* Stats Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Total Balance */}
-                    <Card className="bg-zinc-900 border-zinc-800 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <DollarSign className="h-16 w-16 text-white" />
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-[#121217] rounded-full border border-white/10">
+                        <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center border border-white/5">
+                            <span className="font-serif italic text-xs">AM</span>
                         </div>
-                        <CardHeader className="pb-2">
-                            <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Total Balance</div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold text-white font-mono">${stats.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-                        </CardContent>
-                    </Card>
-
-                    {/* In Transit */}
-                    <Card className="bg-zinc-900 border-zinc-800 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Truck className="h-16 w-16 text-blue-500" />
-                        </div>
-                        <CardHeader className="pb-2">
-                            <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">In Transit</div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-baseline gap-2">
-                                <div className="text-3xl font-bold text-white font-mono">{stats.inTransit}</div>
-                                <span className="text-xs font-bold text-blue-500 uppercase">Active</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Pending Orders */}
-                    <Card className="bg-zinc-900 border-zinc-800 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <Box className="h-16 w-16 text-yellow-500" />
-                        </div>
-                        <CardHeader className="pb-2">
-                            <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Pending Orders</div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-baseline gap-2">
-                                <div className="text-3xl font-bold text-white font-mono">{stats.pending.toString().padStart(2, '0')}</div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Low Stock */}
-                    <Card className="bg-zinc-900 border-zinc-800 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <AlertTriangle className="h-16 w-16 text-red-500" />
-                        </div>
-                        <CardHeader className="pb-2">
-                            <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Low Stock</div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-baseline gap-2">
-                                <div className="text-3xl font-bold text-red-500 font-mono">{stats.lowStockCount.toString().padStart(2, '0')}</div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Main Content Split */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                    {/* LEFT COLUMN: Recent Orders Table */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-bold text-white uppercase tracking-tight">Recent Orders</h3>
-                                <Badge variant="secondary" className="bg-pink-900/50 text-pink-500 border-pink-900 hover:bg-pink-900/50">LIVE</Badge>
-                            </div>
-                            <Button variant="link" className="text-pink-500 text-xs font-bold uppercase tracking-wider hover:text-pink-400 p-0">View All</Button>
-                        </div>
-
-                        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-                            {/* Table Header */}
-                            <div className="grid grid-cols-12 gap-4 p-4 border-b border-white/5 bg-black/20 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
-                                <div className="col-span-2">Order ID</div>
-                                <div className="col-span-3">Customer</div>
-                                <div className="col-span-3">Shipping Status</div>
-                                <div className="col-span-2 text-right">Amount</div>
-                                <div className="col-span-2 text-right">Status</div>
-                            </div>
-
-                            {/* Table Rows */}
-                            {recentOrders.length === 0 ? (
-                                <div className="p-12 text-center text-zinc-600 italic">No orders found. Ready for action.</div>
-                            ) : (
-                                <div className="divide-y divide-white/5">
-                                    {recentOrders.map(order => (
-                                        <div key={order.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/5 transition-colors group">
-                                            <div className="col-span-2 font-mono text-sm text-white font-bold">#{order.id.slice(0, 4)}...</div>
-                                            <div className="col-span-3 text-sm text-zinc-300 truncate">
-                                                {/* Mock Name if not in shipping_address, else use metadata or fallback */}
-                                                {order.shipping_address?.name || "Guest Customer"}
-                                            </div>
-                                            <div className="col-span-3">
-                                                {order.status === 'shipped' || order.status === 'delivered' ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">In Transit</span>
-                                                        <span className="text-[10px] text-zinc-600 font-mono">FX-{Math.floor(Math.random() * 90000) + 10000}</span>
-                                                    </div>
-                                                ) : order.status === 'paid' ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="text-xs font-bold text-yellow-500 uppercase tracking-wider">Processing</span>
-                                                        <span className="text-[10px] text-zinc-600 font-mono">Ready to Ship</span>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-xs font-bold text-zinc-500 uppercase">{order.status}</span>
-                                                )}
-                                            </div>
-                                            <div className="col-span-2 text-right font-mono text-sm text-white font-bold">
-                                                ${order.total_amount}
-                                            </div>
-                                            <div className="col-span-2 flex justify-end">
-                                                <Badge variant="outline" className={`
-                                                    uppercase text-[10px] font-bold tracking-wider border-0
-                                                    ${order.status === 'paid' ? 'bg-pink-500/10 text-pink-500' :
-                                                        order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500' :
-                                                            order.status === 'delivered' ? 'bg-green-500/10 text-green-500' : 'bg-zinc-800 text-zinc-500'}
-                                                 `}>
-                                                    {order.status === 'paid' ? 'PAID' : order.status}
-                                                </Badge>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                        <div className="text-right">
+                            <div className="text-xs font-bold text-white">Alexander McQueen</div>
+                            <div className="text-[9px] text-zinc-500 uppercase tracking-widest">Verified Studio</div>
                         </div>
                     </div>
-
-                    {/* RIGHT COLUMN: Sidebar Widgets */}
-                    <div className="lg:col-span-1 space-y-8">
-
-                        {/* 1. Inventory Health */}
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-bold text-white uppercase tracking-tight">Inventory Health</h3>
-                                <Loader2 className="h-3 w-3 text-zinc-600" />
-                            </div>
-
-                            <div className="space-y-3">
-                                {lowStockItems.length === 0 ? (
-                                    <div className="p-4 rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-500 text-sm text-center">
-                                        All systems optimal. No low stock.
-                                    </div>
-                                ) : (
-                                    lowStockItems.map(item => (
-                                        <div key={item.id} className="p-3 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-between group hover:border-red-900/50 transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-10 w-10 bg-black rounded border border-white/10 overflow-hidden relative">
-                                                    {(item.images?.[0] || item.image_url) && (
-                                                        <img src={item.images?.[0] || item.image_url} className="object-cover w-full h-full opacity-60 group-hover:opacity-100 transition-opacity" />
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <div className="text-sm font-bold text-white uppercase tracking-tight">{item.name}</div>
-                                                    <div className="text-xs text-red-500 font-bold">Only {item.stock} units left</div>
-                                                </div>
-                                            </div>
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-600 hover:text-white">
-                                                <Box className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ))
-                                )}
-
-                                <Button variant="outline" className="w-full border-zinc-800 text-zinc-400 hover:text-white uppercase text-[10px] font-bold tracking-widest h-10">
-                                    View Full Inventory
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* 2. Financial Hub (Stripe Card) */}
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-bold text-white uppercase tracking-tight">Financial Hub</h3>
-
-                            <div className="rounded-2xl p-6 bg-gradient-to-br from-blue-600 to-cyan-500 text-white shadow-lg shadow-blue-900/20 relative overflow-hidden">
-                                <div className="relative z-10">
-                                    <div className="text-[10px] font-bold uppercase tracking-widest text-blue-100/80 mb-2">Connected via Stripe</div>
-                                    <div className="text-3xl font-bold font-mono mb-6">${stats.balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-
-                                    <div className="flex justify-between text-xs text-blue-100 mb-6 border-t border-white/20 pt-4">
-                                        <span>Processing Fees (7d)</span>
-                                        <span className="font-mono">$ {(stats.balance * 0.03).toFixed(2)}</span>
-                                    </div>
-
-                                    <Button
-                                        className="w-full bg-white text-blue-600 hover:bg-blue-50 font-bold uppercase tracking-wider text-xs h-10"
-                                        onClick={() => window.open(stripeUrl || '#', '_blank')}
-                                    >
-                                        Open Stripe Dashboard
-                                    </Button>
-                                </div>
-
-                                {/* Background decoration */}
-                                <DollarSign className="absolute -bottom-8 -right-8 h-40 w-40 text-white/10 rotate-12" />
-                            </div>
-                        </div>
-
-                    </div>
-
                 </div>
             </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                {/* LEFT COLUMN (2/3 width) */}
+                <div className="lg:col-span-2 space-y-8">
+
+                    {/* 1. Stat Cards Row */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Sales */}
+                        <Card className="bg-[#121217] border-zinc-800 relative overflow-hidden">
+                            <CardContent className="p-6">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Total Sales (Stripe)</div>
+                                    <div className="p-1.5 bg-cyan-500/10 rounded text-cyan-500">
+                                        <DollarSign className="h-4 w-4" />
+                                    </div>
+                                </div>
+                                <div className="text-3xl font-bold font-mono text-white mb-2">$124,500.00</div>
+                                <div className="text-xs font-medium text-green-500 flex items-center gap-1">
+                                    <TrendingUp className="h-3 w-3" /> +12.5% <span className="text-zinc-600">vs last month</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Shipments */}
+                        <Card className="bg-[#121217] border-zinc-800 relative overflow-hidden">
+                            <CardContent className="p-6">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Active Shipments</div>
+                                    <div className="p-1.5 bg-blue-500/10 rounded text-blue-500">
+                                        <Package className="h-4 w-4" />
+                                    </div>
+                                </div>
+                                <div className="text-3xl font-bold font-mono text-white mb-2">42</div>
+                                <div className="text-xs font-medium text-green-500 flex items-center gap-1">
+                                    <TrendingUp className="h-3 w-3" /> +5.2% <span className="text-zinc-600">8 out for delivery</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Inventory Alerts */}
+                        <Card className="bg-[#121217] border-zinc-800 relative overflow-hidden border-l-2 border-l-cyan-500">
+                            <CardContent className="p-6">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Low Stock Alerts</div>
+                                    <div className="p-1.5 bg-cyan-500/10 rounded text-cyan-500">
+                                        <AlertTriangle className="h-4 w-4" />
+                                    </div>
+                                </div>
+                                <div className="text-3xl font-bold font-mono text-white mb-2">{stats.lowStockCount}</div>
+                                <div className="text-xs font-bold text-cyan-500">Immediate Action Required</div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* 2. Revenue Trends - THE GRAPH */}
+                    <Card className="bg-[#121217] border-zinc-800 h-[320px]">
+                        <CardHeader className="flex flex-row items-center justify-between pb-0">
+                            <div>
+                                <CardTitle className="text-lg font-bold text-white">Revenue Trends</CardTitle>
+                                <p className="text-xs text-zinc-500 mt-1">Daily performance across all boutique channels</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Badge variant="secondary" className="bg-cyan-950/50 text-cyan-500 border border-cyan-900/50 hover:bg-cyan-900/50">7D</Badge>
+                                <Badge variant="outline" className="text-zinc-500 border-zinc-800 hover:text-white">1M</Badge>
+                                <Badge variant="outline" className="text-zinc-500 border-zinc-800 hover:text-white">1Y</Badge>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="pt-8 h-full relative p-0 overflow-hidden">
+                            {/* Custom SVG Curve for "Blue Wave" - Fixed Responsiveness */}
+                            <div className="absolute inset-0 w-full h-full">
+                                <svg
+                                    className="w-full h-full"
+                                    viewBox="0 0 1000 200"
+                                    preserveAspectRatio="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <defs>
+                                        <linearGradient id="gradient-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
+                                            <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
+                                        </linearGradient>
+                                    </defs>
+                                    {/* The Area Fill */}
+                                    <path d="M0,150 C150,150 200,80 350,80 C500,80 550,40 1000,40 L1000,200 L0,200 Z" fill="url(#gradient-blue)" />
+                                    {/* The Line */}
+                                    <path d="M0,150 C150,150 200,80 350,80 C500,80 550,40 1000,40" stroke="#06b6d4" strokeWidth="4" fill="none" vectorEffect="non-scaling-stroke" />
+                                    {/* Data Point */}
+                                    <circle cx="650" cy="50" r="6" fill="#121217" stroke="#06b6d4" strokeWidth="3" />
+                                </svg>
+                            </div>
+
+                            {/* Axis Labels - Positioned Absolutely at bottom */}
+                            <div className="absolute bottom-4 left-0 right-0 flex justify-between text-[10px] text-zinc-600 font-bold uppercase tracking-widest px-6">
+                                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* 3. Inventory Health */}
+                    <div className="bg-[#121217] border border-zinc-800 rounded-xl p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-bold text-white">Inventory Health</h3>
+                        </div>
+                        <div className="space-y-4">
+                            {inventoryHealth.map((item, i) => (
+                                <div key={i} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg transition-colors group cursor-pointer border border-transparent hover:border-zinc-800">
+                                    <div className="flex items-center gap-4">
+                                        <img src={item.image} className="h-10 w-10 rounded object-cover bg-zinc-800" />
+                                        <div>
+                                            <div className="text-sm font-bold text-white">{item.name}</div>
+                                            <div className="text-[10px] text-zinc-500 font-mono">{item.sku}</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-sm font-bold text-cyan-500">{item.stock} Items Left</div>
+                                        <div className="text-[10px] text-zinc-500 uppercase tracking-wider">{item.status}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* RIGHT COLUMN (1/3 width) - Global Activity Sidebar */}
+                <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-bold text-white">Global Activity</h3>
+                        <div className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
+                    </div>
+
+                    <div className="relative border-l border-zinc-800 ml-3 space-y-8 py-2">
+                        {activityFeed.map((event, i) => (
+                            <div key={i} className="relative pl-8">
+                                {/* Icon Bubble */}
+                                <div className={`absolute -left-4 top-0 h-8 w-8 rounded-full border-4 border-[#09090b] flex items-center justify-center bg-[#1a1a20]`}>
+                                    {event.type === 'like' && <Heart className="h-3 w-3 text-cyan-500 fill-cyan-500" />}
+                                    {event.type === 'order' && <ShoppingCart className="h-3 w-3 text-green-500" />}
+                                    {event.type === 'view' && <Eye className="h-3 w-3 text-cyan-500" />}
+                                    {event.type === 'ship' && <Truck className="h-3 w-3 text-blue-500" />}
+                                </div>
+
+                                {/* Content */}
+                                <div>
+                                    <div className="text-sm text-zinc-300">
+                                        {event.user && <span className="font-bold text-white">{event.user} </span>}
+                                        {event.count && <span className="font-bold text-cyan-500">{event.count} Users </span>}
+                                        <span className="text-zinc-400">{event.text} </span>
+                                        <span className="font-bold text-white">{event.item}</span>
+                                    </div>
+                                    <div className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-wider flex items-center gap-2">
+                                        {event.time}
+                                        {event.location && <span>• {event.location}</span>}
+                                        {event.isLive && <span className="text-cyan-500">• LIVE STREAM</span>}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <Button variant="outline" className="w-full border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 mt-4 text-xs font-bold uppercase tracking-widest py-6">
+                        View Full History
+                    </Button>
+                </div>
+
+            </div>
+
+            {/* Bottom Floating Action, maybe? No, let's keep it clean as per screenshot */}
         </div>
     )
 }

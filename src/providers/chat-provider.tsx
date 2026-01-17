@@ -11,6 +11,7 @@ type Message = {
     sender_id: string
     created_at: string
     is_read: boolean
+    metadata?: any
 }
 
 type Conversation = {
@@ -31,7 +32,7 @@ type ChatContextType = {
     isLoading: boolean
     setActiveConversationId: (id: string | null) => void
     setIsOpen: (open: boolean) => void
-    sendMessage: (content: string) => Promise<void>
+    sendMessage: (content: string, metadata?: any) => Promise<void>
     startSupportChat: () => Promise<void>
     startInquiryChat: (storeId: string, productId?: string) => Promise<void>
     toggleEphemeralMode: (duration: string | null) => Promise<void>
@@ -150,13 +151,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         if (convs) setConversations(convs)
     }
 
-    const sendMessage = async (content: string) => {
+    const sendMessage = async (content: string, metadata?: any) => {
         if (!activeConversationId || !user) return
 
         const { error } = await supabase.from('messages').insert({
             conversation_id: activeConversationId,
             sender_id: user.id,
             content
+            // metadata: metadata || null // Disabled until schema migration is run
         })
 
         if (error) {

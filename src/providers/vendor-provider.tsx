@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface Store {
@@ -10,6 +10,7 @@ interface Store {
     slug: string
     logo_url?: string
     status: string
+    stripe_account_id?: string
     cover_image_url?: string
     cover_video_url?: string
     [key: string]: any
@@ -33,7 +34,7 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
     const [activeStore, setActiveStore] = useState<Store | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
-    const refreshStores = async () => {
+    const refreshStores = useCallback(async () => {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
@@ -46,31 +47,24 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
         if (data) {
             setStores(data)
 
-            // Logic to persist selection or default to first
-            // We can add localStorage persistence here later
-            if (data.length > 0) {
-                // If we already have an active store, check if it still exists
-                if (activeStore) {
-                    const stillExists = data.find(s => s.id === activeStore.id)
-                    if (stillExists) {
-                        setActiveStore(stillExists) // Update with fresh data
-                    } else {
-                        setActiveStore(data[0])
+            setActiveStore(prev => {
+                if (data.length > 0) {
+                    if (prev) {
+                        const stillExists = data.find(s => s.id === prev.id)
+                        return stillExists || data[0]
                     }
-                } else {
-                    setActiveStore(data[0])
+                    return data[0]
                 }
-            } else {
-                setActiveStore(null)
-            }
+                return null
+            })
         }
         setIsLoading(false)
-    }
+    }, []) // Dependencies empty to prevent loops, supabase client is stable enough
 
     // Initial Load
     useEffect(() => {
         refreshStores()
-    }, [])
+    }, [refreshStores])
 
     const selectStore = (storeId: string) => {
         const store = stores.find(s => s.id === storeId)

@@ -11,6 +11,9 @@
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 
+    /* Custom Font for Admin Dashboard */
+    --font-display: "Space Grotesk", sans-serif;
+
     --color-card: var(--card);
     --color-card-foreground: var(--card-foreground);
 
@@ -159,6 +162,15 @@
 
     .neon-border {
         box-shadow: 0 0 10px var(--primary);
+    }
+
+    .map-grid {
+        background-image: radial-gradient(circle, #39282e 1px, transparent 1px);
+        background-size: 30px 30px;
+    }
+
+    .route-path {
+        stroke-dasharray: 8;
     }
 }
 

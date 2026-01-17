@@ -1,213 +1,240 @@
 'use client'
 
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, Moon, MoreHorizontal, User, Truck, Package, CheckCircle2, Home, MapPin, Navigation } from 'lucide-react'
-import Link from 'next/link'
+import { createClient } from '@/utils/supabase/client'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowLeft, Headphones, MapPin, Navigation, Truck, Package, CheckCircle2, Home, Minus, Plus, CloudRain, List, Info } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
 
-export default function OrderTrackingPage() {
+export default function TrackingPage() {
     const params = useParams()
     const id = params.id as string
+    const supabase = createClient()
+    const [order, setOrder] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchOrder = async () => {
+            if (id === 'ORD-DEMO-1234' || id.startsWith('AMR-')) {
+                // Mock Order logic for Demo
+                setOrder({
+                    id: id,
+                    status: 'shipped', // "in transit"
+                    created_at: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+                    items: [{ name: "Leather Corset", image: "https://images.unsplash.com/photo-1595777457583-95e059d581b8" }]
+                })
+                setLoading(false)
+                return
+            }
+
+            const { data } = await supabase
+                .from('orders')
+                .select('*, order_items(*)')
+                .eq('id', id)
+                .single()
+
+            if (data) setOrder(data)
+            setLoading(false)
+        }
+        fetchOrder()
+    }, [id])
+
+    if (loading) return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-zinc-500">Loading tracking...</div>
+
+    if (!order) return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-white">Order not found</div>
 
     return (
-        <div className="min-h-screen bg-black text-foreground relative overflow-hidden">
-
-            {/* Header */}
-            <header className="absolute top-0 left-0 right-0 z-50 h-20 flex items-center justify-between px-6 border-b border-white/5 bg-black/80 backdrop-blur-md">
-                <div className="flex items-center gap-4">
-                    <span className="text-2xl font-serif font-bold tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
-                        AMERICANA
-                    </span>
-                    <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-400 ml-8">
-                        <Link href="/shops" className="hover:text-white transition-colors">Shop</Link>
-                        <Link href="/collections" className="hover:text-white transition-colors">Collections</Link>
-                        <span className="text-pink-500">Track Order</span>
-                    </nav>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    <Link href="/dashboard/buyer" className="text-sm font-medium text-zinc-400 hover:text-white flex items-center gap-2 transition-colors">
-                        <ArrowLeft className="h-4 w-4" /> Back to My Orders
-                    </Link>
-                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs">
-                        U
+        <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-[#050505] text-slate-900 dark:text-white font-sans">
+            {/* Header / Top Bar */}
+            <div className="bg-[#0A0A0A] border-b border-white/5 px-4 md:px-10 py-4 shrink-0">
+                <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-6">
+                    <div className="flex items-center gap-6">
+                        <div>
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold block mb-1">Order ID</span>
+                            <span className="text-white font-bold tracking-tight">#{order.id.slice(0, 8).toUpperCase()}</span>
+                        </div>
+                        <div className="h-10 w-px bg-white/10 hidden sm:block"></div>
+                        <div>
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 font-bold block mb-1">Est. Delivery</span>
+                            <span className="text-white font-bold tracking-tight">{format(new Date(Date.now() + 86400000 * 2), 'MMM d, yyyy')}</span>
+                        </div>
                     </div>
-                </div>
-            </header>
-
-            <div className="flex h-screen pt-20">
-                {/* Left Panel: Status & Timeline */}
-                <div className="w-full md:w-[450px] bg-zinc-950 border-r border-white/5 flex flex-col h-full z-20 relative shadow-[10px_0_50px_-5px_rgba(0,0,0,0.5)]">
-                    <div className="p-8 border-b border-white/5">
-                        <div className="flex justify-between items-start mb-6">
-                            <div>
-                                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Order ID</div>
-                                <div className="text-xl font-bold text-white">#{id.slice(0, 8).toUpperCase()}</div>
-                            </div>
-                            <div className="text-right">
-                                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Est. Delivery</div>
-                                <div className="text-xl font-bold text-white">Oct 28, 2026</div>
-                            </div>
+                    <div className="flex items-center gap-3 bg-[#f4256a]/10 border border-[#f4256a]/20 px-4 py-2.5 rounded-xl">
+                        <div className="h-2 w-2 rounded-full bg-[#f4256a] animate-pulse shadow-[0_0_10px_rgba(244,37,106,0.8)]"></div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] uppercase tracking-wider text-[#f4256a] font-black">Status: {order.status?.toUpperCase() || 'SHIPPED'}</span>
+                            <span className="text-xs text-[#ba9ca6]">Currently in transit to regional hub</span>
                         </div>
-
-                        <div className="bg-white/5 rounded-xl p-4 flex items-center justify-between border border-white/5 mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                                <div>
-                                    <div className="text-xs font-bold text-blue-400 uppercase tracking-wider">Status: Shipped</div>
-                                    <div className="text-xs text-zinc-400">Currently in transit to regional hub</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="px-3 py-1 rounded bg-zinc-900 border border-zinc-800 text-xs font-mono text-zinc-400">
-                                    Carrier: DHL Express
-                                </div>
-                            </div>
-                            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white">
-                                <MoreHorizontal className="h-4 w-4" />
+                    </div>
+                    <div className="flex gap-2">
+                        <Link href="/dashboard/buyer">
+                            <Button variant="outline" className="h-10 px-4 bg-[#0A0A0A] text-white border-white/10 hover:bg-white/5 hover:text-white transition-colors">
+                                <ArrowLeft className="mr-2 h-4 w-4" /> Back
                             </Button>
-                        </div>
-                    </div>
-
-                    {/* Timeline */}
-                    <div className="flex-1 overflow-y-auto p-8 space-y-8 relative">
-                        <div className="absolute left-[54px] top-12 bottom-12 w-px bg-zinc-800" />
-
-                        {/* Event 1: In Transit (Current) */}
-                        <div className="relative flex gap-6">
-                            <div className="relative z-10 h-12 w-12 rounded-full bg-pink-600 border-4 border-zinc-950 flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)]">
-                                <Truck className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="pt-2">
-                                <div className="text-xs font-bold text-pink-500 uppercase tracking-wider mb-1">In Transit</div>
-                                <h3 className="text-white font-bold mb-1">Shipped from Distribution Center</h3>
-                                <p className="text-zinc-400 text-sm leading-relaxed mb-2">
-                                    Brooklyn, NY. Package is on its way to your local facility.
-                                </p>
-                                <div className="text-[10px] text-zinc-600 font-mono">OCT 25, 2026 • 02:14 PM</div>
-                            </div>
-                        </div>
-
-                        {/* Event 2: Processing */}
-                        <div className="relative flex gap-6 opacity-60">
-                            <div className="relative z-10 h-10 w-10 rounded-full bg-pink-600 flex items-center justify-center border-4 border-zinc-950">
-                                <Package className="h-4 w-4 text-white" />
-                            </div>
-                            <div className="pt-1">
-                                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Completed</div>
-                                <h3 className="text-white font-bold mb-1">Processing & Inspection</h3>
-                                <p className="text-zinc-500 text-sm mb-1">
-                                    Awaiting quality control checks at the New York warehouse.
-                                </p>
-                                <div className="text-[10px] text-zinc-700 font-mono">OCT 24, 2026 • 11:45 AM</div>
-                            </div>
-                        </div>
-
-                        {/* Event 3: Order Confirmed */}
-                        <div className="relative flex gap-6 opacity-40">
-                            <div className="relative z-10 h-10 w-10 rounded-full bg-pink-600 flex items-center justify-center border-4 border-zinc-950">
-                                <CheckCircle2 className="h-4 w-4 text-white" />
-                            </div>
-                            <div className="pt-1">
-                                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Completed</div>
-                                <h3 className="text-white font-bold mb-1">Order Confirmed</h3>
-                                <p className="text-zinc-500 text-sm mb-1">
-                                    Payment verified and order details sent to the vendor.
-                                </p>
-                                <div className="text-[10px] text-zinc-700 font-mono">OCT 24, 2026 • 09:12 AM</div>
-                            </div>
-                        </div>
-
-                        {/* Future Steps */}
-                        <div className="relative flex gap-6 opacity-30 grayscale">
-                            <div className="relative z-10 h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center border-4 border-zinc-950 ml-1">
-                                <Navigation className="h-3 w-3 text-white" />
-                            </div>
-                            <div className="pt-1">
-                                <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider mb-1">Upcoming</div>
-                                <h3 className="text-white font-medium">Out for Delivery</h3>
-                            </div>
-                        </div>
-
-                        <div className="relative flex gap-6 opacity-30 grayscale">
-                            <div className="relative z-10 h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center border-4 border-zinc-950 ml-1">
-                                <Home className="h-3 w-3 text-white" />
-                            </div>
-                            <div className="pt-1">
-                                <div className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider mb-1">Upcoming</div>
-                                <h3 className="text-white font-medium">Delivered</h3>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    {/* Bottom: Item Preview */}
-                    <div className="p-6 bg-zinc-900/50 border-t border-white/5">
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3">Items in this Shipment</div>
-                        <div className="flex gap-3">
-                            <div className="h-12 w-12 bg-black rounded border border-white/10 overflow-hidden">
-                                {/* Placeholder for item image */}
-                                <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-600">Img</div>
-                            </div>
-                            <div className="h-12 w-12 bg-black rounded border border-white/10 overflow-hidden">
-                                <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-600">Img</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Panel: Map Visualization (Placeholder) */}
-                <div className="flex-1 bg-zinc-900 relative hidden md:block">
-                    {/* Dark Map grid pattern */}
-                    <div className="absolute inset-0 z-0 opacity-20"
-                        style={{
-                            backgroundImage: 'radial-gradient(#333 1px, transparent 1px)',
-                            backgroundSize: '20px 20px'
-                        }}
-                    />
-
-                    {/* Simulated Map Elements */}
-                    <div className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg h-px bg-gradient-to-r from-pink-500/0 via-pink-500/50 to-pink-500/0 rotate-[-25deg]" />
-
-                    {/* Truck Icon on Map */}
-                    <div className="absolute top-[45%] left-[45%]">
-                        <div className="relative">
-                            <div className="absolute -inset-4 bg-pink-500/20 rounded-full blur-xl animate-pulse" />
-                            <div className="h-10 w-10 bg-pink-600 rounded-full flex items-center justify-center shadow-lg relative z-10">
-                                <Truck className="h-5 w-5 text-white" />
-                            </div>
-                            {/* Tooltip */}
-                            <div className="absolute top-12 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-800 p-3 rounded-lg w-40 shadow-2xl z-20">
-                                <div className="text-[10px] font-bold uppercase text-pink-500 mb-1">Live Location</div>
-                                <div className="text-white font-bold text-sm">Jersey City, NJ</div>
-                                <div className="text-xs text-zinc-500">55 mph • I-95 South</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Origin Point */}
-                    <div className="absolute top-[20%] right-[20%]">
-                        <div className="h-3 w-3 bg-zinc-600 rounded-full" />
-                    </div>
-
-                    {/* Map Controls */}
-                    <div className="absolute bottom-8 right-8 flex flex-col gap-2">
-                        <Button size="icon" variant="secondary" className="bg-zinc-800 text-white hover:bg-zinc-700"><div className="text-lg">+</div></Button>
-                        <Button size="icon" variant="secondary" className="bg-zinc-800 text-white hover:bg-zinc-700"><div className="text-lg">-</div></Button>
-                        <Button size="icon" className="bg-pink-600 hover:bg-pink-700 mt-2"><Navigation className="h-4 w-4" /></Button>
-                    </div>
-
-                    <div className="absolute top-8 right-8 bg-zinc-900/80 backdrop-blur px-4 py-2 rounded-full border border-white/5 text-xs text-white flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-blue-400" />
-                        42°F • Light Rain
+                        </Link>
+                        <button className="flex items-center justify-center h-10 w-10 bg-[#0A0A0A] text-[#f4256a] rounded-lg hover:bg-[#f4256a]/10 transition-all border border-white/10">
+                            <Headphones className="h-5 w-5" />
+                        </button>
                     </div>
                 </div>
             </div>
+
+            <main className="flex-1 flex overflow-hidden">
+                {/* Sidebar (History) */}
+                <aside className="w-full max-w-md bg-[#0A0A0A] border-r border-white/5 overflow-y-auto hidden lg:block">
+                    <div className="p-8">
+                        <h3 className="text-lg font-bold text-white mb-8 flex items-center gap-2">
+                            <List className="text-[#f4256a] h-5 w-5" />
+                            Tracking History
+                        </h3>
+                        <div className="relative space-y-12">
+                            {/* Timeline Line */}
+                            <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-white/5"></div>
+                            <div className="absolute left-[19px] top-2 h-1/2 w-0.5 bg-[#f4256a] shadow-[0_0_8px_rgba(244,37,106,0.4)]"></div>
+
+                            {/* Event 1: In Transit (Active) */}
+                            <div className="relative flex gap-6 group">
+                                <div className="z-10 flex items-center justify-center h-10 w-10 rounded-full bg-[#0A0A0A] border-2 border-[#f4256a] text-[#f4256a] shadow-[0_0_15px_rgba(244,37,106,0.3)]">
+                                    <Truck className="h-5 w-5" />
+                                </div>
+                                <div className="flex flex-col pt-1">
+                                    <span className="text-xs font-bold text-[#f4256a] uppercase tracking-widest mb-1">In Transit</span>
+                                    <h4 className="text-white font-bold">Shipped from Distribution Center</h4>
+                                    <p className="text-[#ba9ca6] text-sm mt-1">Brooklyn, NY. Package is on its way to your local facility.</p>
+                                    <span className="text-[10px] text-zinc-600 mt-2 font-medium">{format(new Date(), 'MMM d, yyyy')} • 02:14 PM</span>
+                                </div>
+                            </div>
+
+                            {/* Event 2: Processing (Done) */}
+                            <div className="relative flex gap-6 group">
+                                <div className="z-10 flex items-center justify-center h-10 w-10 rounded-full bg-[#f4256a] text-white">
+                                    <Package className="h-5 w-5" />
+                                </div>
+                                <div className="flex flex-col pt-1">
+                                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Completed</span>
+                                    <h4 className="text-white font-bold">Processing & Inspection</h4>
+                                    <p className="text-[#ba9ca6] text-sm mt-1">Awaiting quality control checks at the New York warehouse.</p>
+                                    <span className="text-[10px] text-zinc-600 mt-2 font-medium">{format(new Date(Date.now() - 86400000), 'MMM d, yyyy')} • 11:45 AM</span>
+                                </div>
+                            </div>
+
+                            {/* Event 3: Order Confirmed (Done) */}
+                            <div className="relative flex gap-6 group">
+                                <div className="z-10 flex items-center justify-center h-10 w-10 rounded-full bg-[#f4256a] text-white">
+                                    <CheckCircle2 className="h-5 w-5" />
+                                </div>
+                                <div className="flex flex-col pt-1">
+                                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Completed</span>
+                                    <h4 className="text-white font-bold">Order Confirmed</h4>
+                                    <p className="text-[#ba9ca6] text-sm mt-1">Payment verified and order details sent to the vendor.</p>
+                                    <span className="text-[10px] text-zinc-600 mt-2 font-medium">{format(new Date(Date.now() - 86400000 * 2), 'MMM d, yyyy')} • 09:12 AM</span>
+                                </div>
+                            </div>
+
+                            {/* Event 4: Future */}
+                            <div className="relative flex gap-6 group opacity-40">
+                                <div className="z-10 flex items-center justify-center h-10 w-10 rounded-full bg-[#0A0A0A] border-2 border-white/10 text-slate-400">
+                                    <MapPin className="h-5 w-5" />
+                                </div>
+                                <div className="flex flex-col pt-1">
+                                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Upcoming</span>
+                                    <h4 className="text-white font-bold">Delivered</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-12 p-4 bg-[#121212] rounded-xl border border-white/5">
+                            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Items in this shipment</p>
+                            {order.order_items && order.order_items.map((item: any, idx: number) => (
+                                <div
+                                    key={idx}
+                                    className="h-12 w-12 rounded-lg bg-cover bg-center border border-white/10 bg-zinc-800"
+                                    style={{ backgroundImage: `url(${item.image_url || item.images?.[0] || 'https://images.unsplash.com/photo-1595777457583-95e059d581b8'})` }}
+                                    title={item.name}
+                                ></div>
+                            ))}
+                        </div>
+                    </div>
+                </aside>
+
+                {/* Map Section */}
+                <section className="flex-1 relative bg-[#050505] map-grid">
+                    {/* SVG Curve Path */}
+                    <svg className="absolute inset-0 w-full h-full opacity-30" xmlns="http://www.w3.org/2000/svg">
+                        <path className="route-path" d="M100 600 C 200 500, 400 450, 600 300 S 900 150, 1100 100" fill="none" stroke="#f4256a" strokeWidth="3"></path>
+                    </svg>
+
+                    {/* Location 1: Origin */}
+                    <div className="absolute left-[10%] bottom-[20%] group">
+                        <div className="relative">
+                            <div className="h-6 w-6 bg-white rounded-full flex items-center justify-center shadow-2xl">
+                                <div className="h-2 w-2 bg-[#050505] rounded-full"></div>
+                            </div>
+                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-[#050505] text-white text-[10px] px-2 py-1 rounded border border-white/10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Brooklyn DC
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Truck Location */}
+                    <div className="absolute left-[45%] top-[45%] z-20">
+                        <div className="relative">
+                            <div className="absolute -inset-4 bg-[#f4256a]/20 rounded-full blur-lg animate-pulse"></div>
+                            <div className="relative h-12 w-12 bg-[#f4256a] rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(244,37,106,0.6)] border-4 border-[#050505]">
+                                <Truck className="text-white h-6 w-6" />
+                            </div>
+                            {/* Stats Card */}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 whitespace-nowrap bg-[#0A0A0A] border border-[#f4256a]/30 text-white p-3 rounded-xl shadow-2xl">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-black uppercase tracking-tighter text-[#f4256a]">Live Location</span>
+                                        <span className="text-xs font-bold">Jersey City, NJ</span>
+                                    </div>
+                                    <div className="h-6 w-px bg-white/10"></div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-black uppercase tracking-tighter text-slate-400">Speed</span>
+                                        <span className="text-xs font-bold">55 mph</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Destination */}
+                    <div className="absolute right-[15%] top-[10%]">
+                        <div className="relative">
+                            <div className="h-8 w-8 bg-[#00d4ff] rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,212,255,0.4)] border-4 border-[#050505]">
+                                <Home className="text-white h-4 w-4" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div className="absolute bottom-10 right-10 flex flex-col gap-2">
+                        <button className="h-12 w-12 bg-[#0A0A0A]/80 backdrop-blur-md border border-white/10 text-white rounded-xl flex items-center justify-center hover:bg-[#151515] transition-all">
+                            <Plus className="h-6 w-6" />
+                        </button>
+                        <button className="h-12 w-12 bg-[#0A0A0A]/80 backdrop-blur-md border border-white/10 text-white rounded-xl flex items-center justify-center hover:bg-[#151515] transition-all">
+                            <Minus className="h-6 w-6" />
+                        </button>
+                        <button className="h-12 w-12 bg-[#f4256a]/90 backdrop-blur-md border border-white/10 text-white rounded-xl flex items-center justify-center hover:bg-[#f4256a] transition-all mt-4">
+                            <Navigation className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    {/* Weather */}
+                    <div className="absolute top-10 right-10 flex gap-4">
+                        <div className="bg-[#0A0A0A]/60 backdrop-blur-lg border border-white/5 px-4 py-2 rounded-full flex items-center gap-3">
+                            <CloudRain className="text-[#00d4ff] h-5 w-5" />
+                            <span className="text-xs font-bold text-white">42°F · Light Rain</span>
+                        </div>
+                    </div>
+
+                </section>
+            </main>
         </div>
     )
 }

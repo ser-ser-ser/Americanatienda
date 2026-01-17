@@ -119,21 +119,42 @@ function VendorLayoutContent({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center gap-3">
                         <StoreIcon className="h-4 w-4 text-zinc-500" />
                         <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest hidden md:inline">Current Store:</span>
-                        <div className="relative group">
-                            <select
-                                className="appearance-none bg-black border border-zinc-800 hover:border-zinc-600 rounded-lg pl-3 pr-8 py-1.5 text-sm text-white font-bold cursor-pointer transition-colors focus:outline-none focus:ring-1 focus:ring-pink-600"
-                                value={activeStore?.id || ''}
-                                onChange={(e) => selectStore(e.target.value)}
-                            >
-                                {stores.map(s => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.name} {s.status !== 'active' ? `(${s.status})` : ''}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+                        <div className="relative group flex items-center gap-2">
+                            {/* Select Store Dropdown */}
+                            <div className="relative">
+                                <select
+                                    className="appearance-none bg-black border border-zinc-800 hover:border-zinc-600 rounded-lg pl-3 pr-8 py-1.5 text-sm text-white font-bold cursor-pointer transition-colors focus:outline-none focus:ring-1 focus:ring-pink-600"
+                                    value={activeStore?.id || ''}
+                                    onChange={(e) => selectStore(e.target.value)}
+                                >
+                                    {stores.map(s => (
+                                        <option key={s.id} value={s.id}>
+                                            {s.name} {s.status !== 'active' ? `(${s.status})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 pointer-events-none" />
+                            </div>
+
+                            {/* NEW: Add Store Button directly in Header */}
+                            <Link href="/dashboard/vendor/setup">
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-full border border-dashed border-zinc-700 hover:border-pink-500 hover:text-pink-500 text-zinc-500">
+                                    <span className="text-lg font-light leading-none">+</span>
+                                </Button>
+                            </Link>
                         </div>
                     </div>
+
+                    {/* NEW: Back to Master Admin Link (Only visible if user has multiple roles or via logic, but here we add it as a utility) 
+                        Note: We check if user is admin via a client-side check or just link to it. 
+                        Since we are inside layout we might not have 'isAdmin' prop easily without context. 
+                        But we can add a subtle link. 
+                    */}
+                    <Link href="/dashboard/admin">
+                        <Button variant="ghost" size="sm" className="text-[10px] uppercase font-bold text-zinc-600 hover:text-white hover:bg-white/5">
+                            <ShieldAlert className="mr-2 h-3 w-3" /> Master Admin
+                        </Button>
+                    </Link>
                 </div>
             )}
             <div className="flex-1">

@@ -215,6 +215,23 @@ export default function VendorSettingsPage() {
                                             />
                                         </div>
                                         <div className="space-y-1">
+                                            <Label className="text-xs uppercase text-zinc-500 font-bold tracking-widest">Niche</Label>
+                                            <select
+                                                value={formData.niche}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, niche: e.target.value }))}
+                                                className="w-full bg-zinc-950/50 border border-zinc-800 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-zinc-600 appearance-none"
+                                            >
+                                                <option value="">Select a Niche</option>
+                                                <option value="fashion">Fashion & Apparel</option>
+                                                <option value="art">Art & Collectibles</option>
+                                                <option value="music">Music & Vinyl</option>
+                                                <option value="tech">Tech & Gadgets</option>
+                                                <option value="home">Home & Decor</option>
+                                                <option value="wellness">Wellness & CBD</option>
+                                                <option value="vintage">Vintage & Thrift</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1 col-span-2">
                                             <Label className="text-xs uppercase text-zinc-500 font-bold tracking-widest">Brand Color</Label>
                                             <div className="flex gap-2">
                                                 <input

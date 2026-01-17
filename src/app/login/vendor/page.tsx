@@ -101,6 +101,9 @@ export default function VendorLoginPage() {
                         <div className="space-y-2">
                             <div className="flex justify-between items-center">
                                 <label className="text-xs font-bold uppercase text-zinc-500">Password</label>
+                                <Link href="/forgot-password" className="text-xs text-zinc-400 hover:text-white transition-colors">
+                                    Forgot Password?
+                                </Link>
                             </div>
                             <div className="relative">
                                 <Input

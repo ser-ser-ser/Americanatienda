@@ -85,7 +85,7 @@ export default function LoginPage() {
                 <div className="max-w-[400px] mx-auto w-full">
                     <div className="mb-10">
                         <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
-                        <p className="text-zinc-400">Access your curated wardrobe.</p>
+                        <p className="text-zinc-400">Join the Rebellion.</p>
                     </div>
 
                     <form onSubmit={handleLogin} className="space-y-6">

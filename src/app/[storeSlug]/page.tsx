@@ -46,11 +46,41 @@ export default async function StorePage({ params }: { params: { storeSlug: strin
     return (
         <div className="min-h-screen bg-background">
             {/* Store Header */}
-            <div className="bg-zinc-900 border-b border-zinc-800 py-12 px-4">
-                <div className="container mx-auto max-w-6xl">
-                    <Link href="/" className="text-zinc-400 hover:text-white mb-4 block text-sm">&larr; Back to Marketplace</Link>
-                    <h1 className="text-4xl font-bold text-white mb-2">{store.name}</h1>
-                    <p className="text-zinc-400 max-w-xl">{store.description}</p>
+            {/* Store Header with Dynamic Cover */}
+            <div className="relative w-full h-[40vh] min-h-[300px] bg-zinc-900 overflow-hidden group">
+                {store.cover_image_url ? (
+                    <img
+                        src={store.cover_image_url}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        alt={store.name}
+                    />
+                ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-black" />
+                )}
+
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+
+                <div className="absolute bottom-0 left-0 right-0 p-8 pb-12">
+                    <div className="container mx-auto max-w-6xl flex items-end gap-6">
+                        {/* Logo */}
+                        <div className="h-24 w-24 md:h-32 md:w-32 rounded-2xl bg-black border-4 border-background overflow-hidden shadow-2xl shrink-0 relative z-10">
+                            {store.logo_url ? (
+                                <img src={store.logo_url} className="w-full h-full object-cover" alt="Logo" />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-zinc-600 bg-zinc-900 font-bold">LOGO</div>
+                            )}
+                        </div>
+
+                        {/* Text Info */}
+                        <div className="mb-2 relative z-10 shadow-sm">
+                            <Link href="/" className="text-white/80 hover:text-white mb-2 block text-xs font-bold uppercase tracking-widest bg-black/50 backdrop-blur-md w-fit px-3 py-1 rounded-full border border-white/10 hover:bg-black/70 transition-colors">&larr; Marketplace</Link>
+                            <h1 className="text-4xl md:text-6xl font-black text-white mb-2 tracking-tight drop-shadow-lg">{store.name}</h1>
+                            <p className="text-zinc-200 max-w-xl text-sm md:text-base font-medium drop-shadow-md bg-black/30 p-2 rounded-lg backdrop-blur-sm border border-white/5 inline-block">
+                                {store.description}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 

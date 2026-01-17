@@ -117,7 +117,7 @@ export default function StorefrontClient() {
             <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10 transition-all duration-300">
                 <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                     <div className="flex items-center gap-6">
-                        <Link href="/" className="text-zinc-400 hover:text-white transition-colors">
+                        <Link href="/shops" className="text-zinc-400 hover:text-white transition-colors" title="Back to The Arcade">
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
 
@@ -156,6 +156,9 @@ export default function StorefrontClient() {
                                 <DropdownMenuContent className="w-56 bg-zinc-900 border-zinc-800 text-white" align="end">
                                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                                     <DropdownMenuSeparator className="bg-white/10" />
+                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer" onClick={() => router.push('/dashboard/buyer')}>
+                                        Dashboard
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem className="focus:bg-white/10 cursor-pointer" onClick={() => router.push('/dashboard/profile')}>
                                         Profile
                                     </DropdownMenuItem>

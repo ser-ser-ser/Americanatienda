@@ -22,7 +22,13 @@ export default async function ShopsPage() {
                         <Link href="/shops" className="text-primary transition-colors cursor-default">Tiendas</Link>
                         <Link href="#" className="hover:text-primary transition-colors">Editorial</Link>
                     </nav>
-                    <div className="w-8" /> {/* Spacer */}
+                    <div className="flex items-center gap-4">
+                        <Link href="/dashboard">
+                            <Button variant="outline" className="border-white/10 text-white hover:bg-white/10 hover:text-white">
+                                Back to Dashboard
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
             </header>
 

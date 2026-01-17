@@ -8,6 +8,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Send, ArrowLeft, Store, User, Clock } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
+import { ProductCardMessage } from './product-card-message'
+import { ProductSelector } from './product-selector'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 export function ChatSheet() {
     const {
@@ -43,6 +46,16 @@ export function ChatSheet() {
             e.preventDefault()
             handleSend()
         }
+    }
+
+    const handleProductSelect = async (product: any) => {
+        await sendMessage('Sent a product', {
+            type: 'product_card',
+            product_id: product.id,
+            product_name: product.name,
+            product_price: product.price,
+            product_image: product.images?.[0] || ''
+        })
     }
 
     const activeConversation = conversations.find(c => c.id === activeConversationId)
@@ -127,11 +140,20 @@ export function ChatSheet() {
                                         return (
                                             <div key={msg.id} className="flex flex-col gap-1">
                                                 <div className={cn(
-                                                    "max-w-[80%] rounded-2xl px-4 py-2 text-sm",
+                                                    "max-w-[85%] rounded-2xl px-4 py-2 text-sm",
                                                     "bg-zinc-800 text-zinc-200 self-start"
                                                     // "bg-blue-600 text-white self-end" // logic needed
                                                 )}>
-                                                    {msg.content}
+                                                    {msg.metadata?.type === 'product_card' ? (
+                                                        <ProductCardMessage
+                                                            id={msg.metadata.product_id}
+                                                            name={msg.metadata.product_name}
+                                                            price={msg.metadata.product_price}
+                                                            imageUrl={msg.metadata.product_image}
+                                                        />
+                                                    ) : (
+                                                        msg.content
+                                                    )}
                                                 </div>
                                                 <span className="text-[10px] text-zinc-500 px-1">
                                                     {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -146,6 +168,16 @@ export function ChatSheet() {
                             {/* Input Area */}
                             <div className="p-4 border-t border-white/10 bg-zinc-950">
                                 <div className="flex gap-2">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button size="icon" variant="ghost" className="text-zinc-500 hover:text-white shrink-0">
+                                                <Store className="h-5 w-5" />
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0 bg-transparent border-none" align="start" side="top">
+                                            <ProductSelector onSelect={handleProductSelect} />
+                                        </PopoverContent>
+                                    </Popover>
                                     <Input
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
@@ -153,7 +185,7 @@ export function ChatSheet() {
                                         placeholder="Escribe un mensaje..."
                                         className="bg-zinc-900 border-white/10 text-white focus-visible:ring-indigo-500"
                                     />
-                                    <Button onClick={handleSend} size="icon" className="bg-indigo-600 hover:bg-indigo-700">
+                                    <Button onClick={handleSend} size="icon" className="bg-indigo-600 hover:bg-indigo-700 shrink-0">
                                         <Send className="h-4 w-4" />
                                     </Button>
                                 </div>
@@ -198,6 +230,6 @@ export function ChatSheet() {
                     )}
                 </div>
             </SheetContent>
-        </Sheet>
+        </Sheet >
     )
 }

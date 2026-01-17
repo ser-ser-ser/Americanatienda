@@ -1,61 +1,54 @@
 'use client'
 
-import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, CreditCard, CheckCircle, AlertCircle, ExternalLink, RefreshCw } from 'lucide-react'
+import { Loader2, CreditCard, CheckCircle, ExternalLink, RefreshCw } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
+import { useVendor } from '@/providers/vendor-provider'
+import ConnectWrapper from '@/components/stripe/connect-wrapper'
+import {
+    ConnectPayments,
+    ConnectPayouts,
+    ConnectBalances,
+    ConnectAccountOnboarding
+} from "@stripe/react-connect-js"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function VendorPaymentsPage() {
-    const supabase = createClient()
     const router = useRouter()
     const searchParams = useSearchParams()
+    const { activeStore, isLoading: storeLoading, refreshStores } = useVendor()
 
-    const [loading, setLoading] = useState(true)
     const [connecting, setConnecting] = useState(false)
-    const [store, setStore] = useState<any>(null)
-    const [isConnected, setIsConnected] = useState(false)
+    const [pageLoading, setPageLoading] = useState(true)
+
+    const isConnected = !!activeStore?.stripe_account_id
 
     useEffect(() => {
-        const checkStatus = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) return
-
-            // Get store details
-            const { data: storeData } = await supabase
-                .from('stores')
-                .select('*')
-                .eq('owner_id', user.id)
-                .single()
-
-            if (storeData) {
-                setStore(storeData)
-                if (storeData.stripe_account_id) {
-                    setIsConnected(true)
-                }
-            }
-            setLoading(false)
-
-            // Handle return from Stripe
-            if (searchParams.get('success') === 'true') {
-                toast.success('Stripe onboarding completed!')
-                // Clear params
-                router.replace('/dashboard/vendor/payments')
-            }
+        if (!storeLoading) {
+            setPageLoading(false)
         }
 
-        checkStatus()
-    }, [searchParams, router])
+        if (searchParams.get('success') === 'true') {
+            toast.success('Stripe onboarding completed!')
+            refreshStores()
+            router.replace('/dashboard/vendor/payments')
+        }
+    }, [searchParams, router, storeLoading, refreshStores])
 
     const handleConnectStripe = async () => {
+        if (!activeStore) return
         setConnecting(true)
         try {
-            const res = await fetch('/api/stripe/onboard', { method: 'POST' })
+            const res = await fetch('/api/stripe/onboard', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ storeId: activeStore.id })
+            })
             const data = await res.json()
-
             if (data.url) {
                 window.location.href = data.url
             } else {
@@ -67,15 +60,7 @@ export default function VendorPaymentsPage() {
         }
     }
 
-    const handleLoginToStripe = async () => {
-        // TODO: Create a login link via API if needed, or just redirect to dashboard
-        // For Express accounts, we usually generate a login link via API similar to onboarding
-        toast.info('Redirecting to Stripe Dashboard...')
-        // We reuse the onboard endpoint for now (Stripe handles login vs onboard automatically based on state)
-        handleConnectStripe()
-    }
-
-    if (loading) {
+    if (storeLoading || pageLoading) {
         return (
             <div className="flex h-full items-center justify-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
@@ -83,90 +68,91 @@ export default function VendorPaymentsPage() {
         )
     }
 
+    if (!activeStore) {
+        return <div className="p-8 text-zinc-500">No active store selected. Please select a store from the menu.</div>
+    }
+
     return (
-        <div className="p-8 max-w-5xl mx-auto text-white">
-            <div className="mb-8">
-                <h1 className="text-3xl font-serif font-bold mb-2">Payments & Payouts</h1>
-                <p className="text-zinc-400">Manage how you get paid and view your transaction history.</p>
+        <div className="p-8 max-w-6xl mx-auto text-white">
+            <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-serif font-bold mb-2">Financial Command</h1>
+                    <p className="text-zinc-400">Real-time payouts and balance tracking for <span className="text-white font-bold">{activeStore.name}</span>.</p>
+                </div>
+                {isConnected && (
+                    <Badge variant="outline" className="w-fit border-green-500/30 text-green-500 bg-green-500/10 px-3 py-1">
+                        <CheckCircle className="mr-2 h-3 w-3" /> Stripe Connected
+                    </Badge>
+                )}
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-                {/* Connection Status Card */}
-                <Card className="bg-zinc-900 border-zinc-800 md:col-span-2">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            Payout Account
-                            {isConnected ? (
-                                <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">Active</Badge>
-                            ) : (
-                                <Badge variant="secondary" className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20">Pending Setup</Badge>
-                            )}
-                        </CardTitle>
-                        <CardDescription>
-                            {isConnected
-                                ? `Connected Stripe Account: ${store.stripe_account_id}`
-                                : 'Connect a Stripe account to receive payouts from your sales.'}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {isConnected ? (
-                            <div className="space-y-4">
-                                <div className="p-4 bg-green-950/20 border border-green-900/50 rounded-lg flex items-start gap-3">
-                                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
-                                    <div>
-                                        <h4 className="font-bold text-green-500">Ready for Payouts</h4>
-                                        <p className="text-sm text-green-400/80">Your account is linked and verified. Payouts will be transferred automatically according to your Stripe settings.</p>
-                                    </div>
+            {/* IF CONNECTED: SHOW EMBEDDED DASHBOARD */}
+            {isConnected && activeStore.stripe_account_id ? (
+                <ConnectWrapper stripeAccountId={activeStore.stripe_account_id}>
+                    <Tabs defaultValue="overview" className="space-y-6">
+                        <TabsList className="bg-zinc-900 border border-white/10 p-1">
+                            <TabsTrigger value="overview">Overview & Balances</TabsTrigger>
+                            <TabsTrigger value="payouts">Payouts</TabsTrigger>
+                            <TabsTrigger value="history">Payments History</TabsTrigger>
+                        </TabsList>
+
+                        <TabsContent value="overview" className="space-y-6">
+                            <div className="grid gap-6">
+                                <div className="bg-zinc-950 border border-white/10 rounded-xl overflow-hidden p-1">
+                                    <ConnectBalances />
                                 </div>
-                                <Button onClick={handleLoginToStripe} variant="outline" className="border-zinc-700 hover:bg-zinc-800 text-white w-full sm:w-auto">
-                                    <ExternalLink className="mr-2 h-4 w-4" /> View Stripe Dashboard
-                                </Button>
                             </div>
-                        ) : (
+                        </TabsContent>
+
+                        <TabsContent value="payouts">
+                            <div className="bg-zinc-950 border border-white/10 rounded-xl overflow-hidden p-1">
+                                <ConnectPayouts />
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="history">
+                            <div className="bg-zinc-950 border border-white/10 rounded-xl overflow-hidden p-1">
+                                <ConnectPayments />
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </ConnectWrapper>
+            ) : (
+                /* IF NOT CONNECTED: SHOW ONBOARDING CARD */
+                <div className="grid gap-6 md:grid-cols-2">
+                    <Card className="bg-zinc-900 border-zinc-800 md:col-span-2 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#635BFF] to-pink-500" />
+                        <CardHeader>
+                            <div className="h-12 w-12 bg-[#635BFF]/20 rounded-lg flex items-center justify-center mb-4">
+                                <CreditCard className="h-6 w-6 text-[#635BFF]" />
+                            </div>
+                            <CardTitle className="text-2xl">Activate Payouts</CardTitle>
+                            <CardDescription className="text-zinc-400 text-base">
+                                Connect your bank account to start receiving automated payouts from your sales.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
                             <div className="space-y-6">
-                                <div className="flex flex-col sm:flex-row gap-4 items-center p-6 bg-black/40 border border-white/5 rounded-xl">
-                                    <div className="h-12 w-12 bg-[#635BFF] rounded-lg flex items-center justify-center shrink-0">
-                                        <CreditCard className="h-6 w-6 text-white" />
-                                    </div>
-                                    <div className="flex-1 text-center sm:text-left">
-                                        <h3 className="font-bold text-lg mb-1">Stripe Connect</h3>
-                                        <p className="text-sm text-zinc-400">Securely link your bank account or debit card using Stripe to receive automated payouts.</p>
-                                    </div>
-                                    <Button
-                                        onClick={handleConnectStripe}
-                                        disabled={connecting}
-                                        className="bg-[#635BFF] hover:bg-[#5851E1] text-white font-bold px-6 h-12 w-full sm:w-auto"
-                                    >
-                                        {connecting ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : 'Connect Payouts'}
-                                    </Button>
-                                </div>
-                                <p className="text-xs text-center text-zinc-500">
-                                    By connecting your account, you agree to our Platform Services Agreement and the Stripe Connected Account Agreement.
+                                <ul className="space-y-3 text-zinc-300 text-sm">
+                                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Secure daily or weekly payouts</li>
+                                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Real-time financial analytics dashboard</li>
+                                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Automated tax reporting</li>
+                                </ul>
+                                <Button
+                                    onClick={handleConnectStripe}
+                                    disabled={connecting}
+                                    className="bg-[#635BFF] hover:bg-[#5851E1] text-white font-bold px-8 h-14 w-full sm:w-auto shadow-[0_0_30px_rgba(99,91,255,0.3)] transition-all hover:scale-105 text-lg"
+                                >
+                                    {connecting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : 'Connect with Stripe'}
+                                </Button>
+                                <p className="text-xs text-zinc-500">
+                                    By connecting, you agree to the Stripe Connected Account Agreement.
                                 </p>
                             </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Balance Summary (Placeholder until real data) */}
-                <Card className="bg-zinc-900 border-zinc-800 opacity-60">
-                    <CardHeader>
-                        <CardTitle className="text-sm text-zinc-400">Available for Payout</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-white">$0.00</div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-zinc-900 border-zinc-800 opacity-60">
-                    <CardHeader>
-                        <CardTitle className="text-sm text-zinc-400">Pending</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold text-zinc-500">$0.00</div>
-                    </CardContent>
-                </Card>
-            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
         </div>
     )
 }

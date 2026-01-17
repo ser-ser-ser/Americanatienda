@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,7 +18,12 @@ import {
     MapPin,
     CreditCard,
     Heart,
-    Search
+    Search,
+    Truck,
+    Shield,
+    Bell,
+    Lock,
+    TrendingUp
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 
@@ -26,8 +31,10 @@ export function DashboardSidebar() {
     const [store, setStore] = useState<any>(null)
     const [isAdmin, setIsAdmin] = useState(false)
     const [userRole, setUserRole] = useState<string | null>(null)
+    const [user, setUser] = useState<any>(null)
     const router = useRouter()
     const pathname = usePathname()
+    const searchParams = useSearchParams()
     const supabase = createClient()
 
     const handleSignOut = async () => {
@@ -39,6 +46,7 @@ export function DashboardSidebar() {
         const fetchData = async () => {
             const { data: { user } } = await supabase.auth.getUser()
             if (user) {
+                setUser(user)
                 // Fetch Profile
                 const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
                 if (profile) {
@@ -62,64 +70,87 @@ export function DashboardSidebar() {
 
     const isActive = (path: string) => pathname === path
 
+    // Hide standard sidebar on Admin Pages (they use their own AdminSidebar)
+    if (pathname?.startsWith('/dashboard/admin')) {
+        return null
+    }
+
     return (
         <aside className="w-64 border-r border-white/10 bg-black/50 backdrop-blur-xl hidden md:flex flex-col h-screen sticky top-0">
             <div className="p-6 border-b border-white/5">
-                <div className="flex items-center gap-3">
+                <Link href="/" className="flex items-center gap-3 group">
+                    {/* Store Logo or Brand Logo */}
                     {store?.logo_url ? (
                         <img src={store.logo_url} alt={store.name} className="h-10 w-10 rounded-lg object-cover" />
                     ) : (
-                        <div className="h-10 w-10 text-white bg-primary rounded-lg flex items-center justify-center font-bold text-xl">
-                            {isAdmin ? '🛡️' : '🐍'}
+                        <div className="flex items-center gap-3 pl-1">
+                            <div className="relative flex items-center justify-center h-4 w-4">
+                                <div className="h-3 w-3 bg-pink-500 rounded-full animate-pulse z-10" />
+                                <div className="absolute inset-0 bg-pink-500/20 rounded-full animate-ping" />
+                            </div>
                         </div>
                     )}
-                    <div className="overflow-hidden">
-                        <h2 className="font-bold text-white tracking-tight truncate">
-                            {store?.name || (isAdmin ? 'Admin Console' : 'Americanatienda')}
-                        </h2>
-                        <p className="text-xs text-zinc-500 uppercase tracking-wider">
-                            {isAdmin ? 'System Admin' : ((userRole === 'vendor' || userRole === 'seller') ? 'Vendor Portal' : 'My Account')}
-                        </p>
+                    <div className="flex flex-col">
+                        <span className="font-bold text-sm leading-none text-white tracking-wider group-hover:text-pink-500 transition-colors">
+                            {store?.name || 'AMERICANA'}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 font-medium">MY ACCOUNT</span>
                     </div>
-                </div>
+                </Link>
             </div>
 
             <nav className="flex-1 p-4 space-y-1">
-                <Link href="/dashboard">
-                    <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
-                        <LayoutDashboard className="mr-3 h-5 w-5" /> Dashboard
-                    </Button>
-                </Link>
+
 
                 {/* VENDOR LINKS - Visible to Sellers, Vendors, and Admins */}
                 {(userRole === 'seller' || userRole === 'vendor' || isAdmin) && (
                     <div className="pt-4 mt-4 border-t border-white/5">
                         <p className="px-4 text-xs font-bold text-zinc-600 uppercase tracking-wider mb-2">My Store</p>
+
+                        {/* OVERVIEW (Dashboard) */}
                         <Link href="/dashboard/vendor">
-                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor') && !isActive('/dashboard/vendor/') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
+                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor') && !isActive('/dashboard/vendor/') ? 'text-cyan-500 bg-cyan-950/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
                                 <LayoutDashboard className="mr-3 h-5 w-5" /> Overview
                             </Button>
                         </Link>
+
+                        <Link href="/dashboard/vendor/analytics">
+                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor/analytics') ? 'text-cyan-500 bg-cyan-950/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
+                                <TrendingUp className="mr-3 h-5 w-5" /> Insights
+                            </Button>
+                        </Link>
+
                         <Link href="/dashboard/vendor/orders">
                             <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor/orders') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
                                 <ShoppingBag className="mr-3 h-5 w-5" /> Orders
                             </Button>
                         </Link>
+
                         <Link href="/dashboard/vendor/products">
                             <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor/products') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
                                 <Package className="mr-3 h-5 w-5" /> Products
                             </Button>
                         </Link>
+
+                        <Link href="/dashboard/vendor/shipping">
+                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor/shipping') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
+                                <Truck className="mr-3 h-5 w-5" /> Logistics
+                            </Button>
+                        </Link>
+
                         <Link href="/dashboard/vendor/payments">
                             <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor/payments') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
                                 <DollarSign className="mr-3 h-5 w-5" /> Payments
                             </Button>
                         </Link>
+
+                        {/* STORE PORTAL (Video Cover capable) */}
                         <Link href="/dashboard/vendor/settings">
-                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor/settings') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
+                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor/settings') ? 'text-[#ff007f] bg-[#ff007f]/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
                                 <Settings className="mr-3 h-5 w-5" /> Store Portal
                             </Button>
                         </Link>
+
                         <Link href="/dashboard/vendor/profile">
                             <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor/profile') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
                                 <User className="mr-3 h-5 w-5" /> Visionary Profile
@@ -131,25 +162,10 @@ export function DashboardSidebar() {
                 {/* ADMIN LINKS */}
                 {isAdmin && (
                     <div className="pt-4 mt-4 border-t border-white/5">
-                        <p className="px-4 text-xs font-bold text-zinc-600 uppercase tracking-wider mb-2">Platform Admin</p>
-                        <Link href="/dashboard/admin/categories">
-                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/admin/categories') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
-                                <FolderOpen className="mr-3 h-5 w-5" /> Categories
-                            </Button>
-                        </Link>
-                        <Link href="/dashboard/admin/stores">
-                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/admin/stores') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
-                                <Store className="mr-3 h-5 w-5" /> Stores
-                            </Button>
-                        </Link>
-                        <Link href="/dashboard/admin/editorial">
-                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/admin/editorial') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
-                                <BookOpen className="mr-3 h-5 w-5" /> Editorial
-                            </Button>
-                        </Link>
+                        {/* Simplified Admin Links for Context Switching */}
                         <Link href="/dashboard/admin/site-config">
-                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/admin/site-config') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
-                                <Settings className="mr-3 h-5 w-5" /> Site Config
+                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/admin/site-config') ? 'text-primary bg-primary/10' : 'text-zinc-600 hover:text-white hover:bg-white/5'}`}>
+                                <Settings className="mr-3 h-5 w-5" /> Platform Configuration
                             </Button>
                         </Link>
                     </div>
@@ -189,18 +205,31 @@ export function DashboardSidebar() {
                         </Link>
                     </div>
                 )}
+
+                {/* BUYER SECURITY & SETTINGS - Removed as requested, now inside Profile Settings page */}
             </nav>
 
             <div className="p-4 border-t border-white/5">
-                <Link href={(userRole === 'vendor' || userRole === 'seller') ? "/dashboard/vendor/settings" : "/dashboard/settings"}>
-                    <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/settings') || isActive('/dashboard/vendor/settings') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
-                        <Settings className="mr-3 h-5 w-5" /> {(userRole === 'vendor' || userRole === 'seller') ? 'Store Settings' : 'Account Settings'}
-                    </Button>
+                <Link href="/dashboard/buyer/settings?tab=profile" className="flex items-center gap-3 hover:bg-white/5 p-2 rounded-lg transition-colors group">
+                    <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-zinc-800 to-zinc-700 border border-white/10 flex items-center justify-center shadow-inner group-hover:border-pink-500/50 transition-colors">
+                        <span className="text-xs font-bold text-white">{user?.email?.[0]?.toUpperCase()}</span>
+                    </div>
+                    <div className="flex flex-col text-left overflow-hidden">
+                        <span className="text-sm font-medium text-white truncate group-hover:text-pink-400 transition-colors">
+                            {user?.user_metadata?.full_name || 'My Profile'}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 truncate">Settings</span>
+                    </div>
                 </Link>
-                <Button onClick={handleSignOut} variant="ghost" className="w-full justify-start text-red-500 hover:text-red-400 hover:bg-red-500/10 mt-2">
-                    <LogOut className="mr-3 h-5 w-5" /> Sign Out
+
+                <Button
+                    variant="ghost"
+                    className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-950/20 mt-2"
+                    onClick={handleSignOut}
+                >
+                    <LogOut className="mr-3 h-4 w-4" /> Sign Out
                 </Button>
             </div>
-        </aside>
+        </aside >
     )
 }
