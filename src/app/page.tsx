@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from "@/components/ui/input"
 import { useCart } from '@/context/cart-context'
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Image from 'next/image'
 import { Footer } from '@/components/footer'
 import { Menu } from 'lucide-react'
@@ -22,16 +22,35 @@ import {
 
 import { NotificationBell } from '@/components/ui/notification-bell'
 
+const defaultNavLinks = [
+    { label: 'Categories', link: '/collections' },
+    { label: 'Stores', link: '/shops' },
+    { label: 'Editorial', link: '/editorial' },
+    { label: 'The Club', link: '/the-club' }
+]
+
 export default function Home() {
-    const supabase = createClient()
+    const [supabase] = useState(() => createClient())
     const { toggleCart, cartCount } = useCart()
     const [user, setUser] = useState<any>(null)
     const [stores, setStores] = useState<any[]>([])
     const [content, setContent] = useState<Record<string, string>>({})
-    const [navLinks, setNavLinks] = useState<{ label: string, link: string }[]>([])
+    const [hasFetchedContent, setHasFetchedContent] = useState(false)
     const [dbCategories, setDbCategories] = useState<any[]>([])
 
     const [featuredProducts, setFeaturedProducts] = useState<any[]>([])
+
+    const navLinks = useMemo(() => {
+        if (!hasFetchedContent) return []
+        if (content['nav_categories']) {
+            try {
+                return JSON.parse(content['nav_categories'])
+            } catch (e) {
+                return defaultNavLinks
+            }
+        }
+        return defaultNavLinks
+    }, [content, hasFetchedContent])
 
     // Parallax & Scroll Effects
     const { scrollY } = useScroll()
@@ -73,27 +92,7 @@ export default function Home() {
                     return acc
                 }, {})
                 setContent(contentMap)
-
-                // Parse Nav Links
-                if (contentMap['nav_categories']) {
-                    try {
-                        setNavLinks(JSON.parse(contentMap['nav_categories']))
-                    } catch (e) {
-                        setNavLinks([
-                            { label: 'Categories', link: '/collections' },
-                            { label: 'Stores', link: '/shops' },
-                            { label: 'Editorial', link: '/editorial' },
-                            { label: 'The Club', link: '/the-club' }
-                        ])
-                    }
-                } else {
-                    setNavLinks([
-                        { label: 'Categories', link: '/collections' },
-                        { label: 'Stores', link: '/shops' },
-                        { label: 'Editorial', link: '/editorial' },
-                        { label: 'The Club', link: '/the-club' }
-                    ])
-                }
+                setHasFetchedContent(true)
             }
         }
         fetchData()
