@@ -22,7 +22,8 @@ export function ChatSheet() {
         messages,
         sendMessage,
         toggleEphemeralMode,
-        isLoading
+        isLoading,
+        user
     } = useChat()
 
     const [input, setInput] = useState('')
@@ -127,22 +128,14 @@ export function ChatSheet() {
                             <ScrollArea className="flex-1 p-4">
                                 <div className="space-y-4">
                                     {messages.map((msg) => {
-                                        // TODO: We need to know who is 'me' to align right/left properly
-                                        // Using a simple check for now if we had user ID in context, 
-                                        // but for now let's assume if I sent it, it's me.
-                                        // Actually, I need the current user ID in the ChatProvider context to compare.
-                                        // For MVP, I'll align all to left unless I add user to context export.
-                                        // Let's create a visual distinction based on sender_id.
-
-                                        // Quick Fix: We need 'user' from useChat to know "me". 
-                                        // I'll update the Provider to export 'user' later. 
-                                        // For now, let's just render them.
+                                        const isMe = user?.id === msg.sender_id
                                         return (
-                                            <div key={msg.id} className="flex flex-col gap-1">
+                                            <div key={msg.id} className={cn("flex flex-col gap-1", isMe ? "items-end" : "items-start")}>
                                                 <div className={cn(
                                                     "max-w-[85%] rounded-2xl px-4 py-2 text-sm",
-                                                    "bg-zinc-800 text-zinc-200 self-start"
-                                                    // "bg-blue-600 text-white self-end" // logic needed
+                                                    isMe
+                                                        ? "bg-indigo-600 text-white"
+                                                        : "bg-zinc-800 text-zinc-200"
                                                 )}>
                                                     {msg.metadata?.type === 'product_card' ? (
                                                         <ProductCardMessage
