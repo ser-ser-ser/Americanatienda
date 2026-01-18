@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
         try {
             // 3. Retrieve full session with line_items (Webhook payload might be partial)
-            const fullSession = await stripe.checkout.sessions.retrieve(session.id, {
+            const fullSession: any = await stripe.checkout.sessions.retrieve(session.id, {
                 expand: ['line_items']
             })
 
