@@ -56,8 +56,8 @@ export async function POST(req: Request) {
                     account_management: { enabled: true },
                 },
             })
-            console.log('Session created successfully:', accountSession.id)
-            return NextResponse.json({ clientSecret: accountSession.client_secret })
+            console.log('Session created successfully:', (accountSession as any).id)
+            return NextResponse.json({ clientSecret: (accountSession as any).client_secret })
         } catch (stripeError: any) {
             console.error('⚠️ STRIPE SDK ERROR:', stripeError)
             return NextResponse.json({

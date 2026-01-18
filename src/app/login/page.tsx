@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label' // Assuming this component exists or standard label
-import { Loader2, Eye, EyeOff, ArrowLeft, ArrowRight, Store, Checkbox } from 'lucide-react'
+import { Loader2, Eye, EyeOff, ArrowLeft, ArrowRight, Store } from 'lucide-react'
 
 export default function LoginPage() {
     const [email, setEmail] = useState('')
@@ -40,32 +40,36 @@ export default function LoginPage() {
     return (
         <div className="flex min-h-screen bg-black text-white font-sans overflow-hidden">
 
-            {/* LEFT COLUMN: Image & Branding */}
-            <div className="hidden lg:flex w-1/2 relative bg-zinc-900 border-r border-white/10">
-                <div className="absolute inset-0">
-                    {/* Placeholder Fashion Image - Replace with local asset if provided */}
+            {/* LEFT COLUMN: REAL CYBORG SAN SEBASTIAN (CLEAN) */}
+            <div className="hidden lg:flex w-1/2 relative bg-black border-r border-white/10 overflow-hidden items-center justify-center">
+
+                {/* 1. Underlying Texture */}
+                <div className="absolute inset-0 bg-zinc-900" />
+
+                {/* 2. Real Cyborg San Sebastian (Clean) */}
+                <div className="relative z-10 w-full h-full">
                     <img
-                        src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=2000&auto=format&fit=crop"
-                        alt="Americana Fashion"
-                        className="w-full h-full object-cover opacity-60 grayscale hover:grayscale-0 transition-all duration-1000"
+                        src="/real-cyborg-sebastian.jpg"
+                        alt="Cyborg Martyr"
+                        className="w-full h-full object-cover object-center"
                     />
+                    {/* Dark gradient at bottom for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
                 </div>
 
-                {/* Branding Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-90" />
+                {/* 3. Branding Overlay */}
+                <div className="absolute top-12 left-12 z-30 flex items-center gap-3">
+                    <div className="h-2 w-2 bg-white rounded-full" />
+                    <span className="text-xl font-bold tracking-tight text-white font-mono">OFF LIMITS</span>
+                </div>
 
-                <div className="absolute bottom-20 left-12 z-10">
+                <div className="absolute bottom-20 left-12 z-30">
                     <h1 className="text-8xl font-black text-white leading-none tracking-tighter mb-4">
                         OFF<br />LIMITS
                     </h1>
-                    <p className="text-pink-500 font-bold tracking-[0.5em] text-sm uppercase">
-                        Niche Fashion Marketplace
+                    <p className="text-zinc-400 font-mono tracking-[0.2em] text-xs uppercase">
+                        &gt; SYSTEM_READY.
                     </p>
-                </div>
-
-                <div className="absolute top-12 left-12 z-10 flex items-center gap-3">
-                    <div className="h-8 w-8 bg-pink-600 rounded-full" />
-                    <span className="text-xl font-bold tracking-tight">Americana</span>
                 </div>
             </div>
 

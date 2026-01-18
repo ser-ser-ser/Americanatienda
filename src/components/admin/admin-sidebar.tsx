@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
     LayoutDashboard,
+    Layout,
     ShoppingBag,
     Package,
     Truck,
@@ -56,9 +57,11 @@ export function AdminSidebar() {
                 <div>
                     <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-4 pl-3">Platform</h3>
                     <div className="space-y-1">
+                        <NavItem href="/dashboard/admin/cms" icon={<Layout className="w-4 h-4 text-[#ff007f]" />} label="Site Editor (CMS)" active={isActive('/dashboard/admin/cms')} />
                         <NavItem href="/dashboard/admin/site-config" icon={<Settings2 className="w-4 h-4" />} label="Americana Admin Settings" active={isActive('/dashboard/admin/site-config')} />
+
                         <NavItem href="/dashboard/admin/payments" icon={<CreditCard className="w-4 h-4" />} label="Payments" active={isActive('/dashboard/admin/payments')} />
-                        <NavItem href="/dashboard/admin/logistics" icon={<Truck className="w-4 h-4" />} label="Logistics" active={isActive('/dashboard/admin/logistics')} />
+                        <NavItem href="/dashboard/admin/logistics-hub" icon={<Truck className="w-4 h-4 text-emerald-500" />} label="Logistics Hub" active={isActive('/dashboard/admin/logistics-hub')} />
                         <NavItem href="/dashboard/admin/portals" icon={<Store className="w-4 h-4 text-pink-500" />} label="Stores Portals" active={isActive('/dashboard/admin/portals')} />
                         <NavItem href="/dashboard/admin/categories" icon={<LayoutDashboard className="w-4 h-4" />} label="Categories" active={isActive('/dashboard/admin/categories')} />
                         <NavItem href="/dashboard/admin/niche" icon={<Activity className="w-4 h-4" />} label="Niche" active={isActive('/dashboard/admin/niche')} />
