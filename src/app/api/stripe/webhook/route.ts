@@ -74,7 +74,7 @@ export async function POST(req: Request) {
             // 5. Create Order Items
             const lineItems = fullSession.line_items?.data || []
 
-            const orderItems = lineItems.map((item) => ({
+            const orderItems = lineItems.map((item: any) => ({
                 order_id: order.id,
                 product_id: item.price?.product_metadata?.product_id || null, // Need to ensure we pass this in metadata or expand product
                 quantity: item.quantity,
