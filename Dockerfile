@@ -5,7 +5,7 @@
 # -----------------------------------------------------------------------------
 
 # 1. Base Image - Install Dependencies only when needed
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 
 # Install libc6-compat for some native modules if needed
 RUN apk add --no-cache libc6-compat
