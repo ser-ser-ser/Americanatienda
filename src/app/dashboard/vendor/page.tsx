@@ -21,7 +21,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useVendor } from '@/providers/vendor-provider'
 
-export default function VendorDashboard() {
+import { Suspense } from 'react'
+
+function VendorDashboardContent() {
     const supabase = createClient()
     const router = useRouter()
     const { activeStore, isLoading: isVendorLoading } = useVendor()
@@ -288,5 +290,13 @@ export default function VendorDashboard() {
 
             {/* Bottom Floating Action, maybe? No, let's keep it clean as per screenshot */}
         </div>
+    )
+}
+
+export default function VendorDashboard() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-[#09090b] flex items-center justify-center text-cyan-500">Loading Vendor Interface...</div>}>
+            <VendorDashboardContent />
+        </Suspense>
     )
 }
