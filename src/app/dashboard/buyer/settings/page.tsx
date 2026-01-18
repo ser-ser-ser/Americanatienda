@@ -1,7 +1,7 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,7 +16,7 @@ import Link from 'next/link'
 import { FileUpload } from '@/components/ui/file-upload'
 import { cn } from '@/lib/utils'
 
-export default function BuyerSettingsPage() {
+function BuyerSettingsContent() {
     const supabase = createClient()
     const searchParams = useSearchParams()
     const activeTab = searchParams.get('tab') || 'profile'
@@ -640,6 +640,14 @@ export default function BuyerSettingsPage() {
 
             </Tabs>
         </div>
+    )
+}
+
+export default function BuyerSettingsPage() {
+    return (
+        <Suspense fallback={<div className="p-8 text-zinc-500">Loading settings...</div>}>
+            <BuyerSettingsContent />
+        </Suspense>
     )
 }
 

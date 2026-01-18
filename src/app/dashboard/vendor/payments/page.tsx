@@ -17,7 +17,9 @@ import {
 } from "@stripe/react-connect-js"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-export default function VendorPaymentsPage() {
+import { Suspense } from 'react'
+
+function VendorPaymentsContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const { activeStore, isLoading: storeLoading, refreshStores } = useVendor()
@@ -154,5 +156,13 @@ export default function VendorPaymentsPage() {
                 </div>
             )}
         </div>
+    )
+}
+
+export default function VendorPaymentsPage() {
+    return (
+        <Suspense fallback={<div className="flex h-full items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-zinc-500" /></div>}>
+            <VendorPaymentsContent />
+        </Suspense>
     )
 }
