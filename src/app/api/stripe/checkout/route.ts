@@ -5,10 +5,9 @@ import Stripe from 'stripe'
 // Initialize Stripe
 // Initialize Stripe lazily
 const getStripe = () => {
-    if (!process.env.STRIPE_SECRET_KEY) {
-        throw new Error('STRIPE_SECRET_KEY is missing')
-    }
-    return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    // Fallback for build time if env var is missing
+    const key = process.env.STRIPE_SECRET_KEY || "dummy-key-for-build"
+    return new Stripe(key, {
         apiVersion: '2025-12-15.clover',
     })
 }

@@ -4,15 +4,15 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "dummy-key-for-build", {
     apiVersion: '2025-12-15.clover' as any, // Use latest or matching version
 })
 
 // Initialize Supabase Admin Client (Bypasses RLS)
 // We need this because the Webhook is "Anonymous" (no logged in user) but needs to write to 'orders'
 const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key"
 )
 
 export async function POST(req: Request) {
