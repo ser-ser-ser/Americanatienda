@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Search, ShoppingBag } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
+import { Suspense } from 'react'
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
 
@@ -18,7 +20,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     return (
         <div className="flex min-h-screen bg-black relative z-10">
-            <DashboardSidebar />
+            <Suspense fallback={<div className="w-64 border-r border-white/10 bg-black/50" />}>
+                <DashboardSidebar />
+            </Suspense>
             <main className="flex-1 overflow-y-auto h-screen">
                 <header className="h-16 border-b border-white/10 flex items-center justify-between px-6 bg-black sticky top-0 z-40">
                     <div className="flex items-center gap-4">

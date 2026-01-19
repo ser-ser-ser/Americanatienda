@@ -23,6 +23,8 @@ import { useVendor } from '@/providers/vendor-provider'
 
 import { Suspense } from 'react'
 
+export const dynamic = 'force-dynamic'
+
 function VendorDashboardContent() {
     const supabase = createClient()
     const router = useRouter()
