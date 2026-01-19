@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef } f
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import { usePathname } from 'next/navigation'
+import { User } from '@supabase/supabase-js'
 
 type Message = {
     id: string
@@ -30,6 +31,7 @@ type ChatContextType = {
     messages: Message[]
     isOpen: boolean
     isLoading: boolean
+    user: User | null
     setActiveConversationId: (id: string | null) => void
     setIsOpen: (open: boolean) => void
     sendMessage: (content: string, metadata?: any) => Promise<void>
@@ -47,7 +49,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const [messages, setMessages] = useState<Message[]>([])
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [user, setUser] = useState<any>(null)
+    const [user, setUser] = useState<User | null>(null)
     const pathname = usePathname()
 
     // Create a ref for activeConversationId to use inside subscription callbacks
@@ -286,6 +288,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             messages,
             isOpen,
             isLoading,
+            user,
             setActiveConversationId,
             setIsOpen,
             sendMessage,
