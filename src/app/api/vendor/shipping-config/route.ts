@@ -2,83 +2,74 @@ import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url)
-    const storeId = searchParams.get('storeId')
-
-    if (!storeId) {
-        return NextResponse.json({ error: 'Store ID is required' }, { status: 400 })
-    }
-
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
-
-        // Check if user has access to this store (Owner or Member)
-        // Ideally we use RLS, but for explicit check:
-        // Query stores table or store_members
-        // But since we use RLS on shipping_configs, we can just try to SELECT.
-        
-        const { data, error } = await supabase
-            .from('shipping_configs')
-            .select('*')
-            .eq('store_id', storeId)
-            .single()
-
-        if (error && error.code !== 'PGRST116') { // PGRST116 is 'not found' which is fine, return defaults
-            throw error
-        }
-
-        // If no config found, return defaults (or null which frontend handles as defaults)
-        return NextResponse.json(data || { 
-            local_delivery_enabled: false,
-            national_shipping_enabled: false
-        })
-
-    } catch (error: any) {
-        console.error('Error fetching shipping config:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Identify Store ID owned by user (Assuming 1 store per vendor for now)
+    const { data: store } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single()
+
+    if (!store) {
+        return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+    }
+
+    const { data: config } = await supabase
+        .from('shipping_configs')
+        .select('*')
+        .eq('store_id', store.id)
+        .single()
+
+    return NextResponse.json(config || {}) // Return empty object if no config yet (frontend will handle defaults)
 }
 
 export async function POST(request: Request) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        }
+    if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-        const body = await request.json()
-        const { storeId, ...config } = body
+    const body = await request.json()
 
-        if (!storeId) {
-            return NextResponse.json({ error: 'Store ID is required' }, { status: 400 })
-        }
+    // Get Store ID
+    const { data: store } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('owner_id', user.id)
+        .single()
 
-        // Verify access (RLS handles it, but explicit check is good practice if logic is complex)
-        // Here we rely on RLS policies "Enable insert/update for store admins"
+    if (!store) {
+        return NextResponse.json({ error: 'Store not found' }, { status: 404 })
+    }
 
-        const { data, error } = await supabase
-            .from('shipping_configs')
-            .upsert({
-                store_id: storeId,
-                ...config,
-                updated_at: new Date().toISOString()
-            })
-            .select()
-            .single()
+    // Upsert Config
+    const { data, error } = await supabase
+        .from('shipping_configs')
+        .upsert({
+            store_id: store.id,
+            local_delivery_enabled: body.local_delivery_enabled,
+            local_radius_km: body.local_radius_km,
+            local_base_price: body.local_base_price,
+            national_shipping_enabled: body.national_shipping_enabled,
+            national_flat_rate: body.national_flat_rate,
+            free_shipping_threshold: body.free_shipping_threshold,
+            active_providers: body.active_providers || [],
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'store_id' })
+        .select()
+        .single()
 
-        if (error) throw error
-
-        return NextResponse.json(data)
-
-    } catch (error: any) {
-        console.error('Error saving shipping config:', error)
+    if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    return NextResponse.json(data)
 }

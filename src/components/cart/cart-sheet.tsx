@@ -2,6 +2,7 @@
 'use client'
 
 import { useCart } from '@/context/cart-context'
+import { useChat } from '@/providers/chat-provider'
 import Link from 'next/link'
 import {
     Sheet,
@@ -14,10 +15,34 @@ import {
 import { CartItem } from './cart-item'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { ShoppingBag } from 'lucide-react'
+import { ShoppingBag, MessageSquare } from 'lucide-react'
 
 export function CartSheet() {
     const { items, isOpen, toggleCart, cartTotal } = useCart()
+    const { openContextualChat, setIsOpen: setChatOpen } = useChat()
+
+    const handleContactVendor = async () => {
+        if (items.length === 0) return
+
+        const firstItem = items[0]
+        const storeId = firstItem.product.store_id
+        if (!storeId) return
+
+        // Close cart and open chat
+        toggleCart()
+
+        // Define participants (buyer and store owner)
+        // Note: openContextualChat handles finding the store owner if needed, 
+        // but here we just pass the store's reference.
+        // Actually, openContextualChat takes participants as argument.
+        // We might need to fetch the store owner ID first if not available in product.
+
+        await openContextualChat('order', 'cart_inquiry', [], {
+            title: 'Inquiry about my Cart',
+            store_id: storeId,
+            items: items.map(i => ({ name: i.product.name, qty: i.quantity }))
+        })
+    }
 
     return (
         <Sheet open={isOpen} onOpenChange={toggleCart}>
@@ -57,13 +82,23 @@ export function CartSheet() {
                             <p className="text-xs text-zinc-500">
                                 Shipping and taxes calculated at checkout.
                             </p>
-                            <SheetClose asChild>
-                                <Link href="/checkout" className="w-full">
-                                    <Button className="w-full bg-white text-black hover:bg-zinc-200 h-12 text-lg font-bold rounded-full">
-                                        Checkout
-                                    </Button>
-                                </Link>
-                            </SheetClose>
+                            <div className="flex flex-col gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="w-full border-zinc-700 text-white hover:bg-zinc-800 rounded-full h-12"
+                                    onClick={handleContactVendor}
+                                >
+                                    <MessageSquare className="mr-2 h-4 w-4" />
+                                    Contact Vendor
+                                </Button>
+                                <SheetClose asChild>
+                                    <Link href="/checkout" className="w-full">
+                                        <Button className="w-full bg-white text-black hover:bg-zinc-200 h-12 text-lg font-bold rounded-full">
+                                            Checkout
+                                        </Button>
+                                    </Link>
+                                </SheetClose>
+                            </div>
                         </div>
                     </div>
                 )}

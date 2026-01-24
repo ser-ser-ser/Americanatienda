@@ -14,7 +14,8 @@ import {
     Cloud,
     Star,
     Leaf,
-    Moon
+    Moon,
+    Package
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -220,7 +221,40 @@ const TopStoresTable = () => {
     )
 }
 
+import { useEffect, useState } from 'react'
+import { createClient } from '@/utils/supabase/client'
+
 export default function AdminDashboardPage() {
+    const supabase = createClient()
+    const [stats, setStats] = useState({
+        users: 0,
+        stores: 0,
+        products: 0,
+        orders: 0
+    })
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchSystemStats = async () => {
+            const [usersRes, storesRes, productsRes] = await Promise.all([
+                supabase.from('profiles').select('id', { count: 'exact', head: true }),
+                supabase.from('stores').select('id', { count: 'exact', head: true }),
+                supabase.from('products').select('id', { count: 'exact', head: true })
+            ])
+
+            setStats({
+                users: usersRes.count || 0,
+                stores: storesRes.count || 0,
+                products: productsRes.count || 0,
+                orders: 0 // Placeholder for orders until table is ready
+            })
+            setLoading(false)
+        }
+        fetchSystemStats()
+    }, [])
+
+    if (loading) return <div className="p-8 bg-black min-h-screen text-zinc-500 flex items-center justify-center font-mono uppercase tracking-widest animate-pulse">Initializing System Monitor...</div>
+
     return (
         <div className="p-8 bg-[#050505] min-h-screen text-white font-sans">
 
@@ -252,25 +286,24 @@ export default function AdminDashboardPage() {
             {/* KPI ROW */}
             <div className="grid grid-cols-4 gap-4 mb-8">
                 <MetricCard
-                    label="Active Users"
-                    value="142,500"
+                    label="Registered Users"
+                    value={stats.users.toLocaleString()}
                     change="+12% vs last month"
                     icon={<Users className="w-5 h-5 text-[#ff007f]" />}
                     color="text-[#ff007f]"
                 />
                 <MetricCard
-                    label="Conv. Rate"
-                    value="3.4%"
-                    change="+0.5% avg. benchmarks"
+                    label="Active Stores"
+                    value={stats.stores.toLocaleString()}
+                    change="Verified Portals"
                     icon={<ShoppingCart className="w-5 h-5 text-green-500" />}
                     color="text-green-500"
                 />
                 <MetricCard
-                    label="Avg Order Value"
-                    value="$88.20"
-                    change="-2% market dip"
-                    isNegative
-                    icon={<CreditCard className="w-5 h-5 text-zinc-400" />}
+                    label="Listed Products"
+                    value={stats.products.toLocaleString()}
+                    change="System Inventory"
+                    icon={<Package className="w-5 h-5 text-zinc-400" />}
                     color="text-white"
                 />
                 <MetricCard
@@ -321,6 +354,9 @@ export default function AdminDashboardPage() {
                         <MoreHorizontal className="text-zinc-500 w-5 h-5" />
                     </div>
                     <TopStoresTable />
+                    <div className="text-center text-[9px] font-bold text-zinc-500 uppercase tracking-widest mt-4">
+                        Total {stats.stores} Stores in System
+                    </div>
                 </Card>
 
             </div>

@@ -5,13 +5,15 @@ import { useEffect, useState } from 'react'
 import { RewardsCard } from '@/components/dashboard/rewards-card'
 import { TrackingTimeline } from '@/components/dashboard/tracking-timeline'
 import Link from 'next/link'
-import { ShoppingBag, ArrowRight, Search, Download, ChevronDown, Package, Truck, Filter, RefreshCw } from 'lucide-react'
+import { ShoppingBag, ArrowRight, Search, Download, ChevronDown, Package, Truck, Filter, RefreshCw, MessageSquare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useChat } from '@/providers/chat-provider'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 
 export default function BuyerDashboardPage() {
     const supabase = createClient()
+    const { openContextualChat } = useChat()
     const [orders, setOrders] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [user, setUser] = useState<any>(null)
@@ -233,6 +235,25 @@ export default function BuyerDashboardPage() {
                                             Track Package
                                         </Button>
                                     </Link>
+
+                                    <Button
+                                        onClick={() => {
+                                            const storeId = order.order_items?.[0]?.product?.store_id
+                                            if (storeId) {
+                                                openContextualChat('order', order.id, [], {
+                                                    title: `Order #${order.id.slice(0, 8).toUpperCase()}`,
+                                                    store_id: storeId
+                                                })
+                                            } else {
+                                                toast.error("Store information not found for this order")
+                                            }
+                                        }}
+                                        variant="ghost"
+                                        className="h-10 text-xs font-bold uppercase tracking-wider text-zinc-400 hover:text-[#f4256a] hover:bg-[#f4256a]/5 rounded-lg flex items-center gap-2"
+                                    >
+                                        <MessageSquare className="h-4 w-4" />
+                                        Contact Vendor
+                                    </Button>
 
                                     <Button size="icon" variant="ghost" className="h-10 w-10 text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg">
                                         <ChevronDown className="h-4 w-4" />

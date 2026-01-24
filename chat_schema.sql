@@ -1,112 +1,102 @@
--- Create Conversations Table
-CREATE TABLE IF NOT EXISTS public.conversations (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    type TEXT NOT NULL CHECK (type IN ('support', 'inquiry')),
-    title TEXT,
-    store_id UUID REFERENCES public.stores(id),
-    product_id UUID REFERENCES public.products(id),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+
+-- SECURE CHAT SCHEMA (v2 - Conflict Resolved)
+-- Enables "Stealth Mode" communication with PIN protection
+
+-- 1. USER SECURITY (Table to store the Chat PIN)
+CREATE TABLE IF NOT EXISTS public.user_security (
+    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    chat_pin_hash text, 
+    is_stealth_mode_active boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
-ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
+-- 1.5 PROFILES ADDITION (For E2EE)
+-- Run this if chat_public_key doesn't exist in your profiles table
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS chat_public_key jsonb;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS chat_pin_hash text; -- Alternative storage for PIN
 
--- Create Participants Table
-CREATE TABLE IF NOT EXISTS public.conversation_participants (
-    conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE,
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    role TEXT CHECK (role IN ('admin', 'vendor', 'buyer')),
-    last_read_at TIMESTAMPTZ DEFAULT NOW(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    PRIMARY KEY (conversation_id, user_id)
+
+-- 2. SECURE CONVERSATIONS (Renamed to avoid conflict with legacy 'conversations')
+CREATE TABLE IF NOT EXISTS public.secure_conversations (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    participants uuid[] NOT NULL, -- Array of User IDs involved
+    last_message_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    last_message_preview text,
+    is_encrypted boolean DEFAULT true,
+    metadata jsonb DEFAULT '{}'::jsonb, 
+    context_type text, -- 'order', 'product', 'support'
+    context_id text, -- ID of the related object
+    type text DEFAULT 'inquiry', -- 'support', 'inquiry', 'order', 'product'
+    title text,
+    store_id uuid REFERENCES public.stores(id) ON DELETE SET NULL,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
-ALTER TABLE public.conversation_participants ENABLE ROW LEVEL SECURITY;
-
--- Create Messages Table
-CREATE TABLE IF NOT EXISTS public.messages (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    conversation_id UUID REFERENCES public.conversations(id) ON DELETE CASCADE,
-    sender_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-    content TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    is_read BOOLEAN DEFAULT FALSE
+-- 3. SECURE MESSAGES
+CREATE TABLE IF NOT EXISTS public.secure_messages (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    conversation_id uuid REFERENCES public.secure_conversations(id) ON DELETE CASCADE NOT NULL,
+    sender_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+    content text NOT NULL, -- Encrypted content
+    type text DEFAULT 'text', -- 'text', 'image', 'system'
+    read_by uuid[] DEFAULT '{}'::uuid[], -- Array of users who read it
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- Enable RLS
-ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+-- RLS POLICIES
 
--- POLICIES
+-- User Security
+ALTER TABLE public.user_security ENABLE ROW LEVEL SECURITY;
 
--- Conversations: Visible if you are a participant
-CREATE POLICY "Users can view conversations they are participating in"
-ON public.conversations
-FOR SELECT
-USING (
-    exists (
-        select 1 from public.conversation_participants
-        where conversation_id = conversations.id
-        and user_id = auth.uid()
-    )
-);
+DROP POLICY IF EXISTS "Users view own security" ON public.user_security;
+CREATE POLICY "Users view own security" ON public.user_security FOR SELECT USING (auth.uid() = user_id);
 
--- Participants: Visible if you are a participant in the same conversation (or self)
-CREATE POLICY "Users can view participants of their conversations"
-ON public.conversation_participants
-FOR SELECT
-USING (
-    user_id = auth.uid() OR
-    exists (
-        select 1 from public.conversation_participants as cp
-        where cp.conversation_id = conversation_participants.conversation_id
-        and cp.user_id = auth.uid()
-    )
-);
+DROP POLICY IF EXISTS "Users update own security" ON public.user_security;
+CREATE POLICY "Users update own security" ON public.user_security FOR UPDATE USING (auth.uid() = user_id);
 
--- Messages: Visible if you are a participant in the conversation
-CREATE POLICY "Users can view messages in their conversations"
-ON public.messages
-FOR SELECT
-USING (
-    exists (
-        select 1 from public.conversation_participants
-        where conversation_id = messages.conversation_id
-        and user_id = auth.uid()
-    )
-);
+DROP POLICY IF EXISTS "Users insert own security" ON public.user_security;
+CREATE POLICY "Users insert own security" ON public.user_security FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- Messages: Insert allowed if you are a participant
-CREATE POLICY "Users can send messages to their conversations"
-ON public.messages
-FOR INSERT
-WITH CHECK (
-    auth.uid() = sender_id AND
-    exists (
-        select 1 from public.conversation_participants
-        where conversation_id = messages.conversation_id
-        and user_id = auth.uid()
-    )
-);
+-- Secure Conversations
+ALTER TABLE public.secure_conversations ENABLE ROW LEVEL SECURITY;
 
--- Function to update updated_at on new message
-CREATE OR REPLACE FUNCTION public.handle_new_message()
-RETURNS TRIGGER AS $$
-BEGIN
-    UPDATE public.conversations
-    SET updated_at = NOW()
-    WHERE id = NEW.conversation_id;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+DROP POLICY IF EXISTS "Users view joined secure conversations" ON public.secure_conversations;
+CREATE POLICY "Users view joined secure conversations" ON public.secure_conversations
+    FOR SELECT USING (auth.uid() = ANY(participants));
 
--- Trigger for looking up latest message time
-CREATE TRIGGER on_new_message
-AFTER INSERT ON public.messages
-FOR EACH ROW
-EXECUTE FUNCTION public.handle_new_message();
+DROP POLICY IF EXISTS "Users create secure conversations" ON public.secure_conversations;
+CREATE POLICY "Users create secure conversations" ON public.secure_conversations
+    FOR INSERT WITH CHECK (auth.uid() = ANY(participants));
 
--- Enable Realtime
-alter publication supabase_realtime add table public.messages;
-alter publication supabase_realtime add table public.conversations;
+DROP POLICY IF EXISTS "Users update joined secure conversations" ON public.secure_conversations;
+CREATE POLICY "Users update joined secure conversations" ON public.secure_conversations
+    FOR UPDATE USING (auth.uid() = ANY(participants));
+
+-- Secure Messages
+ALTER TABLE public.secure_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users view secure conversation messages" ON public.secure_messages;
+CREATE POLICY "Users view secure conversation messages" ON public.secure_messages
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM public.secure_conversations c 
+            WHERE c.id = secure_messages.conversation_id 
+            AND auth.uid() = ANY(c.participants)
+        )
+    );
+
+DROP POLICY IF EXISTS "Users send secure messages" ON public.secure_messages;
+CREATE POLICY "Users send secure messages" ON public.secure_messages
+    FOR INSERT WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.secure_conversations c 
+            WHERE c.id = conversation_id 
+            AND auth.uid() = ANY(c.participants)
+        )
+    );
+
+-- INDEXES
+CREATE INDEX IF NOT EXISTS idx_secure_conversations_participants ON public.secure_conversations USING GIN(participants);
+CREATE INDEX IF NOT EXISTS idx_secure_messages_conversation_id ON public.secure_messages(conversation_id);

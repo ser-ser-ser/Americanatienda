@@ -3,7 +3,12 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import {
+    generateChatKeyPair,
+    encryptMessage,
+    decryptMessage
+} from '@/lib/crypto/chat-crypto'
 
 type Message = {
     id: string
@@ -16,12 +21,15 @@ type Message = {
 
 type Conversation = {
     id: string
-    type: 'support' | 'inquiry'
+    type: 'support' | 'inquiry' | 'order' | 'product'
+    context_type?: 'order' | 'product' | 'support'
+    context_id?: string
     title?: string
     store_id?: string
     updated_at: string
-    last_message?: string
-    ephemeral_duration?: string // '1h', '24h', etc
+    last_message_preview?: string
+    ephemeral_duration?: string
+    participants: string[]
 }
 
 type ChatContextType = {
@@ -30,56 +38,66 @@ type ChatContextType = {
     messages: Message[]
     isOpen: boolean
     isLoading: boolean
+    isSecure: boolean
     setActiveConversationId: (id: string | null) => void
     setIsOpen: (open: boolean) => void
     sendMessage: (content: string, metadata?: any) => Promise<void>
     startSupportChat: () => Promise<void>
     startInquiryChat: (storeId: string, productId?: string) => Promise<void>
+    openContextualChat: (type: 'order' | 'product' | 'support', id: string, participants: string[], metadata?: any) => Promise<void>
     toggleEphemeralMode: (duration: string | null) => Promise<void>
+    user: any
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
     const supabase = createClient()
+    const router = useRouter()
     const [conversations, setConversations] = useState<Conversation[]>([])
     const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
     const [messages, setMessages] = useState<Message[]>([])
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [user, setUser] = useState<any>(null)
+    const [userPrivateKey, setUserPrivateKey] = useState<JsonWebKey | null>(null)
     const pathname = usePathname()
 
-    // Create a ref for activeConversationId to use inside subscription callbacks
-    const activeIdRef = useRef(activeConversationId)
+    // 1. Initialize Security Keys
     useEffect(() => {
-        activeIdRef.current = activeConversationId
-    }, [activeConversationId])
-
-    // Load initial user and conversations
-    useEffect(() => {
-        const init = async () => {
+        const initSecurity = async () => {
             const { data: { user } } = await supabase.auth.getUser()
             setUser(user)
-            if (user) {
-                fetchConversations()
+            if (!user) return
+
+            // Check for existing keys in localStorage
+            const storedPrivate = localStorage.getItem(`chat_priv_${user.id}`)
+            const storedPublic = localStorage.getItem(`chat_pub_${user.id}`)
+
+            if (storedPrivate && storedPublic) {
+                setUserPrivateKey(JSON.parse(storedPrivate))
+            } else {
+                // Generate new keys
+                console.log("Generating fresh E2EE identity for Americana...")
+                try {
+                    const keys = await generateChatKeyPair()
+                    localStorage.setItem(`chat_priv_${user.id}`, JSON.stringify(keys.privateKey))
+                    localStorage.setItem(`chat_pub_${user.id}`, JSON.stringify(keys.publicKey))
+                    setUserPrivateKey(keys.privateKey)
+
+                    // Sync Public Key to profiles for discovery
+                    await supabase.from('profiles').update({
+                        chat_public_key: keys.publicKey
+                    }).eq('id', user.id)
+                } catch (e) {
+                    console.error("Key generation failed:", e)
+                }
             }
-        }
-        init()
 
-        // Subscribe to NEW conversations
-        const channel = supabase.channel('conversations_channel')
-            .on(
-                'postgres_changes',
-                { event: '*', schema: 'public', table: 'conversations' },
-                () => fetchConversations() // Refresh list on change
-            )
-            .subscribe()
-
-        return () => {
-            supabase.removeChannel(channel)
+            fetchConversations(user.id)
         }
-    }, [supabase])
+        initSecurity()
+    }, [])
 
     // Load messages when active conversation changes
     useEffect(() => {
@@ -88,210 +106,227 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             return
         }
 
-        const fetchMessages = async () => {
+        const fetchAndDecryptMessages = async () => {
             setIsLoading(true)
             const { data, error } = await supabase
-                .from('messages')
+                .from('secure_messages')
                 .select('*')
                 .eq('conversation_id', activeConversationId)
                 .order('created_at', { ascending: true })
 
-            if (data) setMessages(data)
+            if (data && userPrivateKey) {
+                // Decrypt each message if it has E2EE metadata
+                const decrypted = await Promise.all(data.map(async (msg) => {
+                    if (msg.metadata?.e2ee) {
+                        const payload = msg.metadata.e2ee[user?.id]
+                        if (payload) {
+                            const clearText = await decryptMessage(payload, userPrivateKey)
+                            return { ...msg, content: clearText }
+                        }
+                    }
+                    return msg
+                }))
+                setMessages(decrypted)
+            } else if (data) {
+                setMessages(data)
+            }
             setIsLoading(false)
         }
-        fetchMessages()
+        fetchAndDecryptMessages()
 
-        // Realtime Subscription for Messages
-        const channel = supabase.channel(`messages:${activeConversationId}`)
+        // Realtime Subscription
+        const channel = supabase.channel(`secure_messages:${activeConversationId}`)
             .on(
                 'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'messages',
-                    filter: `conversation_id=eq.${activeConversationId}`
-                },
-                (payload) => {
+                { event: 'INSERT', schema: 'public', table: 'secure_messages', filter: `conversation_id=eq.${activeConversationId}` },
+                async (payload) => {
                     const newMessage = payload.new as Message
+                    if (newMessage.metadata?.e2ee && userPrivateKey) {
+                        const e2eePayload = newMessage.metadata.e2ee[user?.id]
+                        if (e2eePayload) {
+                            const clearText = await decryptMessage(e2eePayload, userPrivateKey)
+                            newMessage.content = clearText
+                        }
+                    }
                     setMessages(prev => [...prev, newMessage])
                 }
             )
             .subscribe()
 
-        return () => {
-            supabase.removeChannel(channel)
-        }
-
-    }, [activeConversationId, supabase])
+        return () => { supabase.removeChannel(channel) }
+    }, [activeConversationId, userPrivateKey, user?.id])
 
 
-    const fetchConversations = async () => {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        // Fetch conversations where user is a participant
-        // Note: We need to join with stores if needed, but for now simple select
-        const { data: parts } = await supabase
-            .from('conversation_participants')
-            .select('conversation_id')
-            .eq('user_id', user.id)
-
-        if (!parts || parts.length === 0) {
-            setConversations([])
-            return
-        }
-
-        const ids = parts.map(p => p.conversation_id)
+    const fetchConversations = async (userId: string) => {
         const { data: convs } = await supabase
-            .from('conversations')
+            .from('secure_conversations')
             .select('*')
-            .in('id', ids)
+            .contains('participants', [userId])
             .order('updated_at', { ascending: false })
 
         if (convs) setConversations(convs)
     }
 
-    const sendMessage = async (content: string, metadata?: any) => {
+    const sendMessage = async (content: string, metadata: any = {}) => {
         if (!activeConversationId || !user) return
 
-        const { error } = await supabase.from('messages').insert({
-            conversation_id: activeConversationId,
-            sender_id: user.id,
-            content
-            // metadata: metadata || null // Disabled until schema migration is run
-        })
+        const activeConv = conversations.find(c => c.id === activeConversationId)
+        if (!activeConv) return
 
-        if (error) {
-            toast.error('Failed to send message')
+        try {
+            // E2EE Flow: Encrypt for all participants
+            const e2eeMetadata: any = {}
+
+            // 1. Get Public Keys for all participants
+            const { data: participants } = await supabase
+                .from('profiles')
+                .select('id, chat_public_key')
+                .in('id', activeConv.participants)
+
+            if (participants && participants.length > 0) {
+                const encryptionTasks = participants.map(async (p) => {
+                    if (p.chat_public_key) {
+                        const encrypted = await encryptMessage(content, p.chat_public_key)
+                        e2eeMetadata[p.id] = encrypted
+                    }
+                })
+                await Promise.all(encryptionTasks)
+            }
+
+            const { error } = await supabase.from('secure_messages').insert({
+                conversation_id: activeConversationId,
+                sender_id: user.id,
+                content: "[Encrypted Message]", // Fallback for old clients
+                metadata: { ...metadata, e2ee: e2eeMetadata }
+            })
+
+            if (error) throw error
+        } catch (error) {
+            toast.error('Identity Verification Failed or Network Error')
             console.error(error)
         }
     }
 
-    const startSupportChat = async () => {
+    const startInquiryChat = async (storeId: string, productId?: string) => {
         if (!user) {
-            toast.error('Please login to chat with support')
+            router.push(`/login?next=${pathname}`)
             return
         }
 
-        // Check if existing support chat exists
-        // simplified logic: check local conversations
-        const existing = conversations.find(c => c.type === 'support')
+        const { data: store } = await supabase.from('stores').select('owner_id').eq('id', storeId).single()
+        if (!store) return
+
+        const participants = [user.id, store.owner_id]
+
+        // 2-step check for existing conversation
+        const { data: existing } = await supabase
+            .from('secure_conversations')
+            .select('id')
+            .contains('participants', participants)
+            .eq('type', 'inquiry')
+            .maybeSingle()
+
         if (existing) {
-            console.log('Opening existing support chat', existing.id)
             setActiveConversationId(existing.id)
             setIsOpen(true)
             return
         }
 
-        console.log('Creating new support chat for user', user.id)
-        // Create new support conversation
-        const { data: conv, error } = await supabase
-            .from('conversations')
+        const { data: conv } = await supabase
+            .from('secure_conversations')
             .insert({
-                type: 'support',
-                title: 'Support Chat',
-                created_by: user.id
-            })
-            .select()
-            .single()
-
-        if (error || !conv) {
-            console.error('Error creating support chat:', error)
-            toast.error('Could not start chat')
-            return
-        }
-
-        // Add participant (User)
-        // Note: RLS now allows us to see the conversation immediately because of created_by
-        const { error: partError } = await supabase.from('conversation_participants').insert({
-            conversation_id: conv.id,
-            user_id: user.id,
-            role: 'buyer'
-        })
-
-        if (partError) console.error('Error adding participant:', partError)
-
-        await fetchConversations()
-        setActiveConversationId(conv.id)
-        setIsOpen(true)
-    }
-
-    const startInquiryChat = async (storeId: string, productId?: string) => {
-        if (!user) {
-            toast.error('Please login to inquire')
-            return
-        }
-
-        // Check for existing inquiry
-        // For now, simpler to just create new or check based on title/store combo?
-        // Let's create new for distinct inquiries. Can optimize later.
-
-        // Create new inquiry
-        const { data: conv, error } = await supabase
-            .from('conversations')
-            .insert({
+                participants,
                 type: 'inquiry',
-                title: productId ? 'Product Inquiry' : 'Store Inquiry',
-                store_id: storeId,
-                product_id: productId || null,
-                created_by: user.id
+                title: 'Product Inquiry',
+                store_id: storeId
             })
-            .select()
-            .single()
+            .select().single()
 
-        if (error || !conv) {
-            console.error('Error starting inquiry:', error)
-            toast.error('Could not start inquiry')
+        if (conv) {
+            setActiveConversationId(conv.id)
+            setIsOpen(true)
+            fetchConversations(user.id)
+        }
+    }
+
+    const openContextualChat = async (type: 'order' | 'product' | 'support', id: string, participants: string[], metadata: any = {}) => {
+        if (!user) {
+            router.push(`/login?next=${pathname}`)
             return
         }
 
-        // Add User Participant (Buyer)
-        await supabase.from('conversation_participants').insert({
-            conversation_id: conv.id,
-            user_id: user.id,
-            role: 'buyer'
-        })
+        // Add current user to participants if not present
+        const finalParticipants = [...participants]
+        if (!finalParticipants.includes(user.id)) {
+            finalParticipants.push(user.id)
+        }
 
-        // NOTE: The Vendor (Store Owner) needs to see this. 
-        // Our 'is_store_owner_for_conversation' function handles this visibility.
-        // We *could* insert them as a participant now if we knew their user_id, 
-        // but RLS handles the view permission. 
-        // Ideally, they join the chat layout when they reply.
+        // 1. If SUPPORT: Automatically include all Admins
+        if (type === 'support') {
+            const { data: admins } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('role', 'admin')
 
-        await fetchConversations()
-        setActiveConversationId(conv.id)
-        setIsOpen(true)
-    }
+            if (admins) {
+                admins.forEach(admin => {
+                    if (!finalParticipants.includes(admin.id)) {
+                        finalParticipants.push(admin.id)
+                    }
+                })
+            }
+        }
 
-    const toggleEphemeralMode = async (duration: string | null) => {
-        if (!activeConversationId) return
+        // Check for existing conversation with this exact context
+        const { data: existing } = await supabase
+            .from('secure_conversations')
+            .select('id')
+            .eq('context_type', type)
+            .eq('context_id', id)
+            .maybeSingle()
 
-        const { error } = await supabase
-            .from('conversations')
-            .update({ ephemeral_duration: duration })
-            .eq('id', activeConversationId)
+        if (existing) {
+            setActiveConversationId(existing.id)
+            setIsOpen(true)
+            return
+        }
 
-        if (error) {
-            toast.error('Failed to update privacy settings')
-        } else {
-            toast.success(`Disappearing messages: ${duration ? 'ON' : 'OFF'}`)
-            fetchConversations() // Refresh local state
+        // Create new contextual conversation
+        const { data: conv, error } = await supabase
+            .from('secure_conversations')
+            .insert({
+                participants: finalParticipants,
+                context_type: type,
+                context_id: id,
+                type: type === 'support' ? 'support' : 'inquiry',
+                title: metadata.title || `${type === 'order' ? 'Order' : 'Product'} Inquiry`,
+                store_id: metadata.store_id
+            })
+            .select().single()
+
+        if (conv) {
+            setActiveConversationId(conv.id)
+            setIsOpen(true)
+            fetchConversations(user.id)
+        } else if (error) {
+            toast.error("Failed to initiate chat context")
+            console.error("Contextual Chat Error:", error.message, error.details, error.hint)
         }
     }
 
     return (
         <ChatContext.Provider value={{
-            conversations,
-            activeConversationId,
-            messages,
-            isOpen,
-            isLoading,
-            setActiveConversationId,
-            setIsOpen,
-            sendMessage,
-            startSupportChat,
+            conversations, activeConversationId, messages, isOpen, isLoading,
+            isSecure: !!userPrivateKey,
+            setActiveConversationId, setIsOpen, sendMessage,
+            startSupportChat: async () => {
+                // Generate a stable ID for general support or use user id
+                await openContextualChat('support', user?.id || 'general', [user?.id].filter(Boolean) as string[], { title: 'Americana Support' })
+            },
             startInquiryChat,
-            toggleEphemeralMode
+            openContextualChat,
+            toggleEphemeralMode: async () => { }, // TODO
+            user
         }}>
             {children}
         </ChatContext.Provider>
@@ -300,8 +335,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
 export const useChat = () => {
     const context = useContext(ChatContext)
-    if (context === undefined) {
-        throw new Error('useChat must be used within a ChatProvider')
-    }
+    if (context === undefined) throw new Error('useChat must be used within a ChatProvider')
     return context
 }

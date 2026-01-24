@@ -295,10 +295,13 @@ function VendorDashboardContent() {
     )
 }
 
+import { AIAssistant } from '@/components/ai/ai-assistant'
+
 export default function VendorDashboard() {
     return (
         <Suspense fallback={<div className="min-h-screen bg-[#09090b] flex items-center justify-center text-cyan-500">Loading Vendor Interface...</div>}>
             <VendorDashboardContent />
+            <AIAssistant />
         </Suspense>
     )
 }

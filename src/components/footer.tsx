@@ -91,7 +91,7 @@ export function Footer() {
 
                 <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center text-xs text-zinc-600">
                     <div className="flex flex-col md:flex-row items-center gap-4">
-                        <p>&copy; {currentYear} Americana Tienda. All rights reserved.</p>
+                        <p>&copy; {currentYear} Americana Stores. All rights reserved.</p>
                         {socials.email && <span className="text-zinc-500 hidden md:inline">| {socials.email}</span>}
                     </div>
                     <div className="flex gap-4 mt-4 md:mt-0">

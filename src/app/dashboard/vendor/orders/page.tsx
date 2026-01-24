@@ -4,11 +4,13 @@ import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import { ArrowLeft, Package, Truck, CheckCircle, Clock } from 'lucide-react'
+import { ArrowLeft, Package, Truck, CheckCircle, Clock, MessageSquare } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { useChat } from '@/providers/chat-provider'
 
 export default function VendorOrdersPage() {
     const supabase = createClient()
+    const { openContextualChat } = useChat()
     const [orders, setOrders] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -78,12 +80,29 @@ export default function VendorOrdersPage() {
                                         <div className="flex items-center gap-4">
                                             <div className="flex flex-col items-end">
                                                 <Badge className={`uppercase ${order.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20' :
-                                                        order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20' :
-                                                            'bg-green-500/10 text-green-500 hover:bg-green-500/20'
+                                                    order.status === 'shipped' ? 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20' :
+                                                        'bg-green-500/10 text-green-500 hover:bg-green-500/20'
                                                     }`}>
                                                     {order.status}
                                                 </Badge>
                                             </div>
+                                            <Button
+                                                onClick={() => {
+                                                    if (order.user_id) {
+                                                        openContextualChat('order', order.id, [order.user_id], {
+                                                            title: `Inquiry: Order #${order.id.slice(0, 8).toUpperCase()}`,
+                                                            store_id: order.store_id
+                                                        })
+                                                    }
+                                                }}
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-zinc-500 hover:text-white"
+                                            >
+                                                <MessageSquare className="h-4 w-4 mr-2" />
+                                                Chat
+                                            </Button>
+
                                             <Button variant="outline" size="sm" className="border-zinc-700 text-zinc-300">
                                                 View Details
                                             </Button>

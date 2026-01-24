@@ -50,7 +50,7 @@ export async function POST(req: Request) {
                 business_type: 'individual', // Default, can be changed in onboarding
                 business_profile: {
                     name: store.name,
-                    url: `https://americanatienda.com/shops/${store.slug}`, // Production URL placeholder
+                    url: `https://americanastores.com/shops/${store.slug}`, // Production URL placeholder
                 },
             })
             accountId = account.id

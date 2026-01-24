@@ -158,7 +158,7 @@ export default function RegistrationSuccessPage() {
                     </div>
 
                     <div className="text-center text-[10px] text-zinc-700 uppercase tracking-widest mt-20">
-                        © 2026 Americana Tienda. All rights reserved. | info@americanatienda.com
+                        © 2026 Americana Stores. All rights reserved. | info@americanastores.com
                     </div>
                 </div>
             </div>

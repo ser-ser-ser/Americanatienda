@@ -44,39 +44,41 @@ export async function generateMetadata(): Promise<Metadata> {
         console.error('Metadata fetch failed', e)
     }
 
-    const title = siteContent['home_hero_title'] ? `${siteContent['home_hero_title']} | Americana Tienda` : 'Americana Tienda'
+    const title = siteContent['home_hero_title'] ? `${siteContent['home_hero_title']} | Americana Stores` : 'Americana Stores'
     const description = siteContent['home_hero_description'] || "Premier Online Marketplace. Discover exclusive products from The Red Room, The Lounge, and more."
     const favicon = siteContent['branding_favicon'] || '/icon.png'
     const ogImage = siteContent['branding_og_image'] || '/opengraph-image.png'
 
     return {
         title: {
-            template: '%s | Americana Tienda',
-            default: siteContent['home_hero_title'] || 'Americana Tienda',
+            template: '%s | Americana Stores',
+            default: siteContent['home_hero_title'] || 'Americana Stores',
         },
         description,
-        metadataBase: new URL('https://americanatienda.com'),
+        metadataBase: new URL('https://americanastores.com'),
         icons: {
             icon: favicon,
             shortcut: favicon,
             apple: favicon, // reusing same for apple unless specific key added later
         },
         openGraph: {
-            title: siteContent['home_hero_title'] || "Americana Tienda",
+            title: siteContent['home_hero_title'] || "Americana Stores",
             description,
-            url: 'https://americanatienda.com',
-            siteName: 'Americana Tienda',
+            url: 'https://americanastores.com',
+            siteName: 'Americana Stores',
             images: [
                 {
                     url: ogImage,
                     width: 1200,
                     height: 630,
-                    alt: 'Americana Tienda Preview',
+                    alt: 'Americana Stores Preview',
                 },
             ],
             locale: 'es_MX',
             type: 'website',
         },
+        themeColor: '#000000',
+        category: 'e-commerce',
     };
 }
 

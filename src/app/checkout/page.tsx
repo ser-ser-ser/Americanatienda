@@ -42,6 +42,9 @@ export default function CheckoutPage() {
     const [cvc, setCvc] = useState('')
 
     const [loading, setLoading] = useState(false)
+    const [fetchingShipping, setFetchingShipping] = useState(false)
+    const [localShippingCost, setLocalShippingCost] = useState(0)
+    const [storeId, setStoreId] = useState<string | null>(null)
 
     // Pre-fill user data if logged in
     useEffect(() => {
@@ -53,7 +56,36 @@ export default function CheckoutPage() {
             }
         }
         fetchUser()
-    }, [])
+
+        // Identify Store
+        if (items.length > 0) {
+            setStoreId(items[0].product.store_id || null)
+        }
+    }, [items])
+
+    // Fetch Shipping Config
+    useEffect(() => {
+        const fetchShipping = async () => {
+            if (!storeId) return
+            setFetchingShipping(true)
+            try {
+                const { data, error } = await supabase
+                    .from('shipping_configs')
+                    .select('*')
+                    .eq('store_id', storeId)
+                    .maybeSingle()
+
+                if (data && data.national_shipping_enabled) {
+                    setLocalShippingCost(Number(data.national_flat_rate) || 150)
+                }
+            } catch (err) {
+                console.error("Error fetching shipping:", err)
+            } finally {
+                setFetchingShipping(false)
+            }
+        }
+        fetchShipping()
+    }, [storeId])
 
     const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -114,16 +146,15 @@ export default function CheckoutPage() {
                 if (profileError) console.error("Profile update warning:", profileError)
             }
 
-            // 3. CALCULATE SHIPPING (Simple "Same City" Heuristic for now)
-            // In a real app, we'd fetch the store's location and calculate distance.
-            // For MVP, we'll assume standard shipping if we don't have the complex geometric calc ready.
-            const shippingCost = 0.00 // Placeholder for the calculation logic
+            // 3. CALCULATE SHIPPING (Real logic from shipping_configs)
+            const shippingCost = localShippingCost
 
             // 4. CREATE ORDER
             const { data: order, error: orderError } = await supabase
                 .from('orders')
                 .insert({
                     user_id: user.id,
+                    store_id: storeId, // Crucial for notification triggers and vendor dashboard
                     total_amount: cartTotal + shippingCost,
                     shipping_cost: shippingCost,
                     shipping_address_id: addressData.id,
@@ -441,7 +472,7 @@ export default function CheckoutPage() {
                                         <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processing...
                                     </>
                                 ) : (
-                                    `Pay $${cartTotal.toFixed(2)}`
+                                    `Pay $${(cartTotal + localShippingCost).toFixed(2)}`
                                 )}
                             </Button>
 
@@ -482,7 +513,7 @@ export default function CheckoutPage() {
                             </div>
                             <div className="flex justify-between text-zinc-400">
                                 <span>Shipping</span>
-                                <span>Calculated at next step</span>
+                                <span>{fetchingShipping ? 'Calculating...' : `$${localShippingCost.toFixed(2)}`}</span>
                             </div>
                             <div className="flex justify-between text-zinc-400">
                                 <span>Taxes</span>
@@ -492,7 +523,7 @@ export default function CheckoutPage() {
 
                         <div className="flex justify-between text-xl font-black py-6 border-t border-white/5">
                             <span>Total</span>
-                            <span>${cartTotal.toFixed(2)}</span>
+                            <span>${(cartTotal + localShippingCost).toFixed(2)}</span>
                         </div>
 
                     </div>

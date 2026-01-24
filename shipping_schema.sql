@@ -19,24 +19,11 @@ ALTER TABLE public.shipping_configs ENABLE ROW LEVEL SECURITY;
 
 -- Policies
 
--- Allow read access to store members/owners
-CREATE POLICY "Enable read access for store members" ON public.shipping_configs
-    FOR SELECT
-    USING (
-        store_id IN (
-            SELECT id FROM stores WHERE owner_id = auth.uid()
-            UNION
-            SELECT store_id FROM mid_store_members WHERE user_id = auth.uid() -- Using the view or direct table if RLS allows
-        )
-    );
-
--- Allow insert/update for store admins
-CREATE POLICY "Enable insert/update for store admins" ON public.shipping_configs
+-- Allow read/write for store owners
+CREATE POLICY "Enable read/write for store owners" ON public.shipping_configs
     FOR ALL
     USING (
         store_id IN (
             SELECT id FROM stores WHERE owner_id = auth.uid()
-            UNION
-            SELECT store_id FROM mid_store_members WHERE user_id = auth.uid() AND role IN ('admin', 'owner')
         )
     );

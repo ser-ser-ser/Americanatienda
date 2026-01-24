@@ -1,23 +1,30 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, CreditCard, CheckCircle, ExternalLink, RefreshCw } from 'lucide-react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
+import {
+    Loader2,
+    CreditCard,
+    CheckCircle,
+    LayoutDashboard,
+    Settings,
+    Wallet
+} from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+
 import { useVendor } from '@/providers/vendor-provider'
 import ConnectWrapper from '@/components/stripe/connect-wrapper'
+import { PaymentSettings } from '@/components/dashboard/payments/payment-settings'
 import {
     ConnectPayments,
     ConnectPayouts,
     ConnectBalances,
-    ConnectAccountOnboarding
 } from "@stripe/react-connect-js"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-import { Suspense } from 'react'
 
 function VendorPaymentsContent() {
     const router = useRouter()
@@ -26,20 +33,25 @@ function VendorPaymentsContent() {
 
     const [connecting, setConnecting] = useState(false)
     const [pageLoading, setPageLoading] = useState(true)
+    const processedSuccess = useState(false) // Use state/ref to track execution
 
-    const isConnected = !!activeStore?.stripe_account_id
+    // Derived state
+    const isStripeConnected = !!activeStore?.stripe_account_id
 
     useEffect(() => {
-        if (!storeLoading) {
-            setPageLoading(false)
-        }
+        if (!storeLoading) setPageLoading(false)
 
-        if (searchParams.get('success') === 'true') {
+        // Prevent double-firing or loops
+        if (searchParams.get('success') === 'true' && !processedSuccess[0]) {
+            processedSuccess[1](true) // Mark as processed immediately
             toast.success('Stripe onboarding completed!')
-            refreshStores()
-            router.replace('/dashboard/vendor/payments')
+
+            // Execute logic
+            refreshStores().then(() => {
+                router.replace('/dashboard/vendor/payments')
+            })
         }
-    }, [searchParams, router, storeLoading, refreshStores])
+    }, [searchParams, router, storeLoading, refreshStores, processedSuccess])
 
     const handleConnectStripe = async () => {
         if (!activeStore) return
@@ -64,104 +76,110 @@ function VendorPaymentsContent() {
 
     if (storeLoading || pageLoading) {
         return (
-            <div className="flex h-full items-center justify-center p-8">
+            <div className="flex h-full items-center justify-center p-8 bg-[#09090b]">
                 <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
             </div>
         )
     }
 
     if (!activeStore) {
-        return <div className="p-8 text-zinc-500">No active store selected. Please select a store from the menu.</div>
+        return <div className="p-8 text-zinc-500">No active store selected.</div>
     }
 
     return (
-        <div className="p-8 max-w-6xl mx-auto text-white">
-            <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-serif font-bold mb-2">Financial Command</h1>
-                    <p className="text-zinc-400">Real-time payouts and balance tracking for <span className="text-white font-bold">{activeStore.name}</span>.</p>
+        <div className="min-h-screen bg-[#09090b] p-8 text-white relative z-10">
+            <div className="max-w-6xl mx-auto space-y-8">
+
+                {/* Header */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h1 className="text-3xl font-serif font-bold tracking-tight">Finanzas & Pagos</h1>
+                        <p className="text-zinc-400 mt-1">Gestiona tus métodos de cobro y visualiza tus ingresos.</p>
+                    </div>
+                    {isStripeConnected && (
+                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                            <span className="text-sm font-medium text-green-500">Stripe Activo</span>
+                        </div>
+                    )}
                 </div>
-                {isConnected && (
-                    <Badge variant="outline" className="w-fit border-green-500/30 text-green-500 bg-green-500/10 px-3 py-1">
-                        <CheckCircle className="mr-2 h-3 w-3" /> Stripe Connected
-                    </Badge>
-                )}
-            </div>
 
-            {/* IF CONNECTED: SHOW EMBEDDED DASHBOARD */}
-            {isConnected && activeStore.stripe_account_id ? (
-                <ConnectWrapper stripeAccountId={activeStore.stripe_account_id}>
-                    <Tabs defaultValue="overview" className="space-y-6">
-                        <TabsList className="bg-zinc-900 border border-white/10 p-1">
-                            <TabsTrigger value="overview">Overview & Balances</TabsTrigger>
-                            <TabsTrigger value="payouts">Payouts</TabsTrigger>
-                            <TabsTrigger value="history">Payments History</TabsTrigger>
-                        </TabsList>
+                {/* Main Tabs: Overview (Stripe) vs Settings (Config) */}
+                <Tabs defaultValue="settings" className="space-y-6">
+                    <TabsList className="bg-[#121217] border border-zinc-800 p-1 w-full md:w-auto grid grid-cols-2 md:inline-flex">
+                        <TabsTrigger value="overview" className="data-[state=active]:bg-zinc-800">
+                            <LayoutDashboard className="mr-2 h-4 w-4" /> Resumen & Stripe
+                        </TabsTrigger>
+                        <TabsTrigger value="settings" className="data-[state=active]:bg-zinc-800">
+                            <Settings className="mr-2 h-4 w-4" /> Configuración de Pagos
+                        </TabsTrigger>
+                    </TabsList>
 
-                        <TabsContent value="overview" className="space-y-6">
-                            <div className="grid gap-6">
-                                <div className="bg-zinc-950 border border-white/10 rounded-xl overflow-hidden p-1">
-                                    <ConnectBalances />
+                    {/* TAB: SETTINGS (ALL GATEWAYS) */}
+                    <TabsContent value="settings" className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                        <PaymentSettings />
+                    </TabsContent>
+
+                    {/* TAB: OVERVIEW (STRIPE DASHBOARD) */}
+                    <TabsContent value="overview" className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+                        {isStripeConnected ? (
+                            <ConnectWrapper stripeAccountId={activeStore.stripe_account_id!}>
+                                <div className="grid gap-6">
+                                    {/* Custom Stats or Shortcuts could go here */}
+
+                                    <Tabs defaultValue="balances" className="w-full">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <TabsList className="bg-transparent p-0 gap-4 border-b border-zinc-800 w-full justify-start rounded-none h-auto">
+                                                <TabsTrigger value="balances" className="rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent px-0 pb-2">Balances</TabsTrigger>
+                                                <TabsTrigger value="payouts" className="rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent px-0 pb-2">Payouts</TabsTrigger>
+                                                <TabsTrigger value="transactions" className="rounded-none border-b-2 border-transparent data-[state=active]:border-white data-[state=active]:bg-transparent px-0 pb-2">Transactions</TabsTrigger>
+                                            </TabsList>
+                                        </div>
+
+                                        <TabsContent value="balances">
+                                            <div className="bg-[#121217] border border-zinc-800 rounded-xl overflow-hidden p-1">
+                                                <ConnectBalances />
+                                            </div>
+                                        </TabsContent>
+                                        <TabsContent value="payouts">
+                                            <div className="bg-[#121217] border border-zinc-800 rounded-xl overflow-hidden p-1">
+                                                <ConnectPayouts />
+                                            </div>
+                                        </TabsContent>
+                                        <TabsContent value="transactions">
+                                            <div className="bg-[#121217] border border-zinc-800 rounded-xl overflow-hidden p-1">
+                                                <ConnectPayments />
+                                            </div>
+                                        </TabsContent>
+                                    </Tabs>
                                 </div>
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="payouts">
-                            <div className="bg-zinc-950 border border-white/10 rounded-xl overflow-hidden p-1">
-                                <ConnectPayouts />
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="history">
-                            <div className="bg-zinc-950 border border-white/10 rounded-xl overflow-hidden p-1">
-                                <ConnectPayments />
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </ConnectWrapper>
-            ) : (
-                /* IF NOT CONNECTED: SHOW ONBOARDING CARD */
-                <div className="grid gap-6 md:grid-cols-2">
-                    <Card className="bg-zinc-900 border-zinc-800 md:col-span-2 relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#635BFF] to-pink-500" />
-                        <CardHeader>
-                            <div className="h-12 w-12 bg-[#635BFF]/20 rounded-lg flex items-center justify-center mb-4">
-                                <CreditCard className="h-6 w-6 text-[#635BFF]" />
-                            </div>
-                            <CardTitle className="text-2xl">Activate Payouts</CardTitle>
-                            <CardDescription className="text-zinc-400 text-base">
-                                Connect your bank account to start receiving automated payouts from your sales.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-6">
-                                <ul className="space-y-3 text-zinc-300 text-sm">
-                                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Secure daily or weekly payouts</li>
-                                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Real-time financial analytics dashboard</li>
-                                    <li className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Automated tax reporting</li>
-                                </ul>
-                                <Button
-                                    onClick={handleConnectStripe}
-                                    disabled={connecting}
-                                    className="bg-[#635BFF] hover:bg-[#5851E1] text-white font-bold px-8 h-14 w-full sm:w-auto shadow-[0_0_30px_rgba(99,91,255,0.3)] transition-all hover:scale-105 text-lg"
-                                >
-                                    {connecting ? <Loader2 className="animate-spin mr-2 h-5 w-5" /> : 'Connect with Stripe'}
-                                </Button>
-                                <p className="text-xs text-zinc-500">
-                                    By connecting, you agree to the Stripe Connected Account Agreement.
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-            )}
+                            </ConnectWrapper>
+                        ) : (
+                            <Card className="bg-[#121217] border-zinc-800">
+                                <CardHeader>
+                                    <div className="h-12 w-12 bg-[#635BFF]/20 rounded-lg flex items-center justify-center mb-4">
+                                        <CreditCard className="h-6 w-6 text-[#635BFF]" />
+                                    </div>
+                                    <CardTitle className="text-white">Conectar con Stripe</CardTitle>
+                                    <CardDescription>Para ver tus balances y transacciones de Stripe, necesitas conectar tu cuenta.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <Button onClick={handleConnectStripe} disabled={connecting} className="bg-[#635BFF] hover:bg-[#5851E1] text-white">
+                                        {connecting ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : 'Conectar Stripe Ahora'}
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div>
     )
 }
 
 export default function VendorPaymentsPage() {
     return (
-        <Suspense fallback={<div className="flex h-full items-center justify-center p-8"><Loader2 className="h-8 w-8 animate-spin text-zinc-500" /></div>}>
+        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-[#09090b]"><Loader2 className="h-8 w-8 animate-spin text-zinc-500" /></div>}>
             <VendorPaymentsContent />
         </Suspense>
     )

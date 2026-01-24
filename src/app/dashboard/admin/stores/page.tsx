@@ -198,7 +198,7 @@ export default function MasterAdminStoresPage() {
                             <div className="flex items-center gap-6 text-sm text-zinc-400 pl-36">
                                 <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> Global</div>
                                 <div className="flex items-center gap-2"><Mail className="h-4 w-4" /> contact@{selectedStore.slug}.com</div>
-                                <div className="flex items-center gap-2"><Globe className="h-4 w-4" /> {selectedStore.slug}.americanatienda.com</div>
+                                <div className="flex items-center gap-2"><Globe className="h-4 w-4" /> {selectedStore.slug}.americanastores.com</div>
                             </div>
 
                             <div className="flex gap-4">

@@ -23,7 +23,8 @@ import {
     Shield,
     Bell,
     Lock,
-    TrendingUp
+    TrendingUp,
+    Palette
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 
@@ -141,6 +142,21 @@ export function DashboardSidebar() {
                         <Link href="/dashboard/vendor/payments">
                             <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor/payments') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
                                 <DollarSign className="mr-3 h-5 w-5" /> Payments
+                            </Button>
+                        </Link>
+
+                        <Link href="/dashboard/chat">
+                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/chat') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5 relative'}`}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-3 h-5 w-5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                Messages
+                                {/* Notification Badge */}
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-pink-500 animate-pulse" />
+                            </Button>
+                        </Link>
+
+                        <Link href="/dashboard/vendor/design">
+                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/vendor/design') ? 'text-[#ff007f] bg-[#ff007f]/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
+                                <Palette className="mr-3 h-5 w-5" /> Store Design
                             </Button>
                         </Link>
 

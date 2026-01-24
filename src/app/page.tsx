@@ -353,7 +353,7 @@ export default function Home() {
                     <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
                         <div>
                             <h3 className="text-3xl font-serif font-bold text-white mb-2">Join the Movement</h3>
-                            <p className="text-zinc-400">@americanatienda • Join 50k+ connoisseurs</p>
+                            <p className="text-zinc-400">@americanastores • Join 50k+ connoisseurs</p>
                         </div>
                         <Button
                             variant="outline"

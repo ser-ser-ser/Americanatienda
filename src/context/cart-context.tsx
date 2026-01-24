@@ -19,12 +19,15 @@ interface CartContextType {
     clearCart: () => void
     cartTotal: number
     cartCount: number
+    shippingTotal: number
+    setShippingTotal: (amount: number) => void
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
     const [items, setItems] = useState<CartItem[]>([])
+    const [shippingTotal, setShippingTotal] = useState(0)
     const [isOpen, setIsOpen] = useState(false)
     const [isLoaded, setIsLoaded] = useState(false)
 
@@ -97,7 +100,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const clearCart = useCallback(() => setItems([]), [])
 
 
-    const cartTotal = items.reduce((total, item) => total + item.product.price * item.quantity, 0)
+    const itemsTotal = items.reduce((total, item) => total + item.product.price * item.quantity, 0)
+    const cartTotal = itemsTotal + shippingTotal
     const cartCount = items.reduce((count, item) => count + item.quantity, 0)
 
     // Prevent hydration mismatch by not rendering until loaded (or just render children)
@@ -117,6 +121,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 clearCart,
                 cartTotal,
                 cartCount,
+                shippingTotal,
+                setShippingTotal,
             }}
         >
             {children}
