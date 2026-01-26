@@ -5,7 +5,7 @@ import { CartProvider } from "@/context/cart-context";
 import { ChatProvider } from "@/providers/chat-provider";
 import { NotificationProvider } from '@/providers/notification-provider'
 import { ChatSheet } from "@/components/chat/chat-sheet";
-import { FloatingChatButton } from "@/components/chat/floating-chat-button";
+// Removed FloatingChatButton - using inline chat buttons instead
 import { CartSheet } from "@/components/cart/cart-sheet";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -100,7 +100,6 @@ export default function RootLayout({
                                 {children}
                             </main>
                             <Toaster />
-                            <FloatingChatButton />
                             <ChatSheet />
                         </NotificationProvider>
                     </ChatProvider>
