@@ -43,13 +43,19 @@ export async function updateSession(request: NextRequest) {
         }
 
         // B. Role Check
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single()
+        // OPTIMIZATION: Check app_metadata first to avoid DB call
+        let role = user.app_metadata?.role
 
-        const role = profile?.role || 'buyer'
+        if (!role) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single()
+            role = profile?.role
+        }
+
+        role = role || 'buyer'
 
         // Admin Protection
         if (request.nextUrl.pathname.startsWith('/dashboard/admin') && role !== 'admin') {
@@ -69,17 +75,22 @@ export async function updateSession(request: NextRequest) {
 
             // C. Vendor Status Check (Store)
             // Only run this if we are not already on the setup or waiting pages to avoid loops
-            // C. Vendor Status Check (Store)
-            // Only run this if we are not already on the setup or waiting pages to avoid loops
             if (!request.nextUrl.pathname.includes('/setup') && (role === 'seller' || role === 'vendor')) {
-                const { data: store } = await supabase
-                    .from('stores')
-                    .select('status')
-                    .eq('owner_id', user.id)
-                    .single()
+                // OPTIMIZATION: Check app_metadata first
+                const storeStatus = user.app_metadata?.store_status
+                let hasStore = !!storeStatus
+
+                if (!hasStore) {
+                    const { data: store } = await supabase
+                        .from('stores')
+                        .select('status')
+                        .eq('owner_id', user.id)
+                        .single()
+                    hasStore = !!store
+                }
 
                 // If no store -> Redirect to Setup
-                if (!store) {
+                if (!hasStore) {
                     const url = request.nextUrl.clone()
                     url.pathname = '/dashboard/vendor/setup'
                     return NextResponse.redirect(url)
