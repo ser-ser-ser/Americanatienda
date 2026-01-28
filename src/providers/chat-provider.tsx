@@ -1,9 +1,10 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import { usePathname, useRouter } from 'next/navigation'
+import { User } from '@supabase/supabase-js'
 import {
     generateChatKeyPair,
     encryptMessage,
@@ -46,30 +47,58 @@ type ChatContextType = {
     startInquiryChat: (storeId: string, productId?: string) => Promise<void>
     openContextualChat: (type: 'order' | 'product' | 'support', id: string, participants: string[], metadata?: any) => Promise<void>
     toggleEphemeralMode: (duration: string | null) => Promise<void>
-    user: any
+    user: User | null
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
-    const supabase = createClient()
+    const [supabase] = useState(() => createClient())
     const router = useRouter()
     const [conversations, setConversations] = useState<Conversation[]>([])
     const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
     const [messages, setMessages] = useState<Message[]>([])
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [user, setUser] = useState<any>(null)
+    const [user, setUser] = useState<User | null>(null)
     const [userPrivateKey, setUserPrivateKey] = useState<JsonWebKey | null>(null)
     const pathname = usePathname()
 
-    // 1. Initialize Security Keys
+    // 1. Initialize Auth
     useEffect(() => {
-        const initSecurity = async () => {
-            const { data: { user } } = await supabase.auth.getUser()
-            setUser(user)
-            if (!user) return
+        const initAuth = async () => {
+            const { data: { user: initialUser } } = await supabase.auth.getUser()
+            setUser(initialUser)
+        }
+        initAuth()
 
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null)
+        })
+
+        return () => subscription.unsubscribe()
+    }, [supabase])
+
+    const fetchConversations = useCallback(async (userId: string) => {
+        const { data: convs } = await supabase
+            .from('secure_conversations')
+            .select('*')
+            .contains('participants', [userId])
+            .order('updated_at', { ascending: false })
+
+        if (convs) setConversations(convs)
+    }, [supabase])
+
+    // 2. Initialize Security Keys & Conversations (depends on user)
+    useEffect(() => {
+        if (!user) {
+            setConversations([])
+            setMessages([])
+            setUserPrivateKey(null)
+            return
+        }
+
+        const initSecurity = async () => {
             // Check for existing keys in localStorage
             const storedPrivate = localStorage.getItem(`chat_priv_${user.id}`)
             const storedPublic = localStorage.getItem(`chat_pub_${user.id}`)
@@ -97,7 +126,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             fetchConversations(user.id)
         }
         initSecurity()
-    }, [])
+    }, [user, supabase, fetchConversations])
 
     // Load messages when active conversation changes
     useEffect(() => {
@@ -108,7 +137,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
         const fetchAndDecryptMessages = async () => {
             setIsLoading(true)
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('secure_messages')
                 .select('*')
                 .eq('conversation_id', activeConversationId)
@@ -118,7 +147,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 // Decrypt each message if it has E2EE metadata
                 const decrypted = await Promise.all(data.map(async (msg) => {
                     if (msg.metadata?.e2ee) {
-                        const payload = msg.metadata.e2ee[user?.id]
+                        const payload = user ? msg.metadata.e2ee[user.id] : null
                         if (payload) {
                             const clearText = await decryptMessage(payload, userPrivateKey)
                             return { ...msg, content: clearText }
@@ -142,7 +171,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                 async (payload) => {
                     const newMessage = payload.new as Message
                     if (newMessage.metadata?.e2ee && userPrivateKey) {
-                        const e2eePayload = newMessage.metadata.e2ee[user?.id]
+                        const e2eePayload = user ? newMessage.metadata.e2ee[user.id] : null
                         if (e2eePayload) {
                             const clearText = await decryptMessage(e2eePayload, userPrivateKey)
                             newMessage.content = clearText
@@ -154,18 +183,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             .subscribe()
 
         return () => { supabase.removeChannel(channel) }
-    }, [activeConversationId, userPrivateKey, user?.id])
+    }, [activeConversationId, userPrivateKey, user?.id, supabase, user])
 
-
-    const fetchConversations = async (userId: string) => {
-        const { data: convs } = await supabase
-            .from('secure_conversations')
-            .select('*')
-            .contains('participants', [userId])
-            .order('updated_at', { ascending: false })
-
-        if (convs) setConversations(convs)
-    }
 
     const sendMessage = async (content: string, metadata: any = {}) => {
         if (!activeConversationId || !user) return
@@ -207,7 +226,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const startInquiryChat = async (storeId: string, productId?: string) => {
+    const startInquiryChat = async (storeId: string, _productId?: string) => {
         if (!user) {
             router.push(`/login?next=${pathname}`)
             return

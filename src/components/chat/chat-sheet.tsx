@@ -1,7 +1,7 @@
 'use client'
 
 import { useChat } from '@/providers/chat-provider'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -23,7 +23,6 @@ export function ChatSheet() {
         messages,
         sendMessage,
         toggleEphemeralMode,
-        isLoading,
         user
     } = useChat()
 
@@ -149,16 +148,6 @@ export function ChatSheet() {
                                     <ScrollArea className="flex-1 p-4">
                                         <div className="space-y-4">
                                             {messages.map((msg) => {
-                                                // TODO: We need to know who is 'me' to align right/left properly
-                                                // Using a simple check for now if we had user ID in context, 
-                                                // but for now let's assume if I sent it, it's me.
-                                                // Actually, I need the current user ID in the ChatProvider context to compare.
-                                                // For MVP, I'll align all to left unless I add user to context export.
-                                                // Let's create a visual distinction based on sender_id.
-
-                                                // Quick Fix: We need 'user' from useChat to know "me". 
-                                                // I'll update the Provider to export 'user' later. 
-                                                // For now, let's just render them.
                                                 const isMe = user?.id === msg.sender_id
                                                 return (
                                                     <div key={msg.id} className={cn("flex flex-col gap-1", isMe ? "items-end" : "items-start")}>
