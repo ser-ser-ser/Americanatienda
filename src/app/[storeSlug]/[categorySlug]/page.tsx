@@ -14,18 +14,20 @@ export async function generateStaticParams() {
         const storesRes = await fetch(`${supabaseUrl}/rest/v1/stores?select=id,slug`, {
             headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
         })
-        const stores = await storesRes.json()
+        const stores: { id: string; slug: string }[] = await storesRes.json()
 
         const catsRes = await fetch(`${supabaseUrl}/rest/v1/store_categories?select=slug,store_id`, {
             headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
         })
-        const categories = await catsRes.json()
+        const categories: { store_id: string; slug: string }[] = await catsRes.json()
 
         if (!stores || !categories || !Array.isArray(stores) || !Array.isArray(categories)) return []
 
         const paths = []
+        const storeMap = new Map(stores.map((s) => [s.id, s] as [string, typeof s]))
+
         for (const cat of categories) {
-            const store = stores.find((s: any) => s.id === cat.store_id)
+            const store = storeMap.get(cat.store_id)
             if (store) {
                 paths.push({
                     storeSlug: store.slug,
