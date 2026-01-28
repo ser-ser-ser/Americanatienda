@@ -30,6 +30,10 @@ type Conversation = {
     last_message_preview?: string
     ephemeral_duration?: string
     participants: string[]
+    stores?: {
+        name: string
+        logo_url?: string | null
+    } | null
 }
 
 type ChatContextType = {
@@ -160,11 +164,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const fetchConversations = async (userId: string) => {
         const { data: convs } = await supabase
             .from('secure_conversations')
-            .select('*')
+            .select('*, stores:store_id(name, logo_url)')
             .contains('participants', [userId])
             .order('updated_at', { ascending: false })
 
-        if (convs) setConversations(convs)
+        if (convs) setConversations(convs as unknown as Conversation[])
     }
 
     const sendMessage = async (content: string, metadata: any = {}) => {
