@@ -113,8 +113,7 @@ export default function ProductsPage() {
         const newImages = [...formData.images]
 
         try {
-            for (let i = 0; i < e.target.files.length; i++) {
-                const file = e.target.files[i]
+            const uploadPromises = Array.from(e.target.files).map(async (file) => {
                 const fileExt = file.name.split('.').pop()
                 const fileName = `${Math.random()}.${fileExt}`
                 const filePath = `${store.id}/${fileName}`
@@ -129,8 +128,12 @@ export default function ProductsPage() {
                     .from('product-media')
                     .getPublicUrl(filePath)
 
-                newImages.push(publicUrl)
-            }
+                return publicUrl
+            })
+
+            const uploadedUrls = await Promise.all(uploadPromises)
+            newImages.push(...uploadedUrls)
+
             setFormData(prev => ({ ...prev, images: newImages }))
             toast.success('Media uploaded')
         } catch (error: any) {
