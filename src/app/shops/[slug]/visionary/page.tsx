@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import VisionaryClient from './client'
+import { SiteFooter } from '@/components/site-footer'
 
 export async function generateStaticParams() {
     const supabase = createClient(
@@ -11,5 +12,5 @@ export async function generateStaticParams() {
 }
 
 export default function VisionaryPage() {
-    return <VisionaryClient />
+    return <VisionaryClient footer={<SiteFooter />} />
 }

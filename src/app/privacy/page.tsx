@@ -1,29 +1,18 @@
-'use client'
-
-import { createClient } from '@/utils/supabase/client'
-import { useEffect, useState } from 'react'
-import { Footer } from '@/components/footer'
+import { createClient } from '@/utils/supabase/server'
+import { SiteFooter } from '@/components/site-footer'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
-export default function PrivacyPage() {
-    const supabase = createClient()
-    const [text, setText] = useState('')
-    const [loading, setLoading] = useState(true)
+export default async function PrivacyPage() {
+    const supabase = await createClient()
 
-    useEffect(() => {
-        const fetchPolicy = async () => {
-            const { data } = await supabase
-                .from('site_content')
-                .select('value')
-                .eq('key', 'privacy_policy_text')
-                .single()
+    const { data } = await supabase
+        .from('site_content')
+        .select('value')
+        .eq('key', 'privacy_policy_text')
+        .single()
 
-            if (data) setText(data.value)
-            setLoading(false)
-        }
-        fetchPolicy()
-    }, [supabase])
+    const text = data?.value
 
     return (
         <div className="min-h-screen bg-black text-white selection:bg-primary/30">
@@ -40,20 +29,12 @@ export default function PrivacyPage() {
             <main className="pt-32 pb-24 container mx-auto px-6 max-w-4xl">
                 <h1 className="text-4xl md:text-5xl font-serif font-black mb-12">Privacy Policy</h1>
 
-                {loading ? (
-                    <div className="animate-pulse space-y-4">
-                        <div className="h-4 bg-zinc-800 rounded w-3/4"></div>
-                        <div className="h-4 bg-zinc-800 rounded w-full"></div>
-                        <div className="h-4 bg-zinc-800 rounded w-5/6"></div>
-                    </div>
-                ) : (
-                    <div className="prose prose-invert prose-lg max-w-none text-zinc-300 whitespace-pre-wrap font-sans">
-                        {text || 'No privacy policy defined yet.'}
-                    </div>
-                )}
+                <div className="prose prose-invert prose-lg max-w-none text-zinc-300 whitespace-pre-wrap font-sans">
+                    {text || 'No privacy policy defined yet.'}
+                </div>
             </main>
 
-            <Footer />
+            <SiteFooter />
         </div>
     )
 }

@@ -1,7 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
 import { ArrowRight, Sparkles } from 'lucide-react'
-import { Footer } from '@/components/footer'
+import { SiteFooter } from '@/components/site-footer'
 import { Button } from '@/components/ui/button'
 
 // Reusing the header logic from layout or page, but simplified for this page
@@ -106,7 +106,7 @@ export default async function ShopsPage() {
                     )}
                 </div>
             </main>
-            <Footer />
+            <SiteFooter />
         </div>
     )
 }

@@ -1,41 +1,36 @@
-'use client'
-
-import { useEffect, useState } from 'react'
-import { createClient } from '@/utils/supabase/client'
+import { createClient } from '@/utils/supabase/server'
 import { Facebook, Github, Instagram, Twitter } from 'lucide-react'
 import Link from 'next/link'
 
-export function Footer() {
-    const [socials, setSocials] = useState({
+export async function SiteFooter() {
+    const supabase = await createClient()
+
+    // Fetch data
+    let socials = {
         facebook: '',
         twitter: '',
         instagram: '',
         github: '',
         email: '',
         description: ''
-    })
-    const supabase = createClient()
+    }
 
-    useEffect(() => {
-        const fetchSocials = async () => {
-            const { data } = await supabase.from('site_content').select('*').in('key', ['social_facebook_url', 'social_twitter_url', 'social_instagram_url', 'social_github_url', 'footer_contact_email', 'footer_description'])
-            if (data) {
-                const map = data.reduce((acc: any, item: any) => {
-                    acc[item.key] = item.value
-                    return acc
-                }, {})
-                setSocials({
-                    facebook: map['social_facebook_url'],
-                    twitter: map['social_twitter_url'],
-                    instagram: map['social_instagram_url'],
-                    github: map['social_github_url'],
-                    email: map['footer_contact_email'],
-                    description: map['footer_description']
-                })
-            }
+    const { data } = await supabase.from('site_content').select('*').in('key', ['social_facebook_url', 'social_twitter_url', 'social_instagram_url', 'social_github_url', 'footer_contact_email', 'footer_description'])
+
+    if (data) {
+        const map = data.reduce((acc: any, item: any) => {
+            acc[item.key] = item.value
+            return acc
+        }, {})
+        socials = {
+            facebook: map['social_facebook_url'],
+            twitter: map['social_twitter_url'],
+            instagram: map['social_instagram_url'],
+            github: map['social_github_url'],
+            email: map['footer_contact_email'],
+            description: map['footer_description']
         }
-        fetchSocials()
-    }, [supabase])
+    }
 
     const currentYear = new Date().getFullYear()
 

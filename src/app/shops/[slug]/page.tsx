@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import StorefrontClient from './StorefrontClient'
+import { SiteFooter } from '@/components/site-footer'
 
 // Required for static export
 export async function generateStaticParams() {
@@ -14,5 +15,5 @@ export async function generateStaticParams() {
 }
 
 export default function StorefrontPage() {
-    return <StorefrontClient />
+    return <StorefrontClient footer={<SiteFooter />} />
 }

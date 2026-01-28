@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Loader2, ArrowLeft, ShoppingCart, Shield, Zap, Wind, Share2, Heart, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Footer } from '@/components/footer'
 import { toast } from 'sonner'
 import { useCart } from '@/context/cart-context'
 import { useChat } from '@/providers/chat-provider'
@@ -24,9 +23,10 @@ import {
 interface ProductClientProps {
     storeSlug: string
     productSlug: string
+    footer: React.ReactNode
 }
 
-export default function ProductClient({ storeSlug, productSlug }: ProductClientProps) {
+export default function ProductClient({ storeSlug, productSlug, footer }: ProductClientProps) {
     const router = useRouter()
     const supabase = createClient()
     const { addItem, toggleCart } = useCart()
@@ -253,7 +253,7 @@ export default function ProductClient({ storeSlug, productSlug }: ProductClientP
                 </div>
             </main>
 
-            <Footer />
+            {footer}
         </div>
     )
 }

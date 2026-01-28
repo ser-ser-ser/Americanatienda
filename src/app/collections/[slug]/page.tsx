@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/server'
 import CollectionClient from '@/app/collections/[slug]/CollectionClient'
+import { SiteFooter } from '@/components/site-footer'
 
 export async function generateStaticParams() {
     const supabase = await createClient()
@@ -12,5 +13,5 @@ export async function generateStaticParams() {
 
 export default async function CollectionPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params
-    return <CollectionClient slug={slug} />
+    return <CollectionClient slug={slug} footer={<SiteFooter />} />
 }
