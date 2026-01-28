@@ -146,38 +146,27 @@ export default function CheckoutPage() {
                 if (profileError) console.error("Profile update warning:", profileError)
             }
 
-            // 3. CALCULATE SHIPPING (Real logic from shipping_configs)
-            const shippingCost = localShippingCost
-
-            // 4. CREATE ORDER
-            const { data: order, error: orderError } = await supabase
-                .from('orders')
-                .insert({
-                    user_id: user.id,
-                    store_id: storeId, // Crucial for notification triggers and vendor dashboard
-                    total_amount: cartTotal + shippingCost,
-                    shipping_cost: shippingCost,
-                    shipping_address_id: addressData.id,
-                    status: 'processing'
+            // 3. CREATE ORDER VIA SERVERLESS API
+            const response = await fetch('/api/orders/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    items: items.map(i => ({ product_id: i.product.id, quantity: i.quantity })),
+                    address_id: addressData.id,
+                    store_id: storeId
                 })
-                .select()
-                .single()
+            })
 
-            if (orderError) throw orderError
+            const result = await response.json()
 
-            // 5. CREATE ORDER ITEMS
-            const orderItemsData = items.map(item => ({
-                order_id: order.id,
-                product_id: item.product.id,
-                quantity: item.quantity,
-                price_at_purchase: item.product.price
-            }))
-
-            const { error: itemsError } = await supabase
-                .from('order_items')
-                .insert(orderItemsData)
-
-            if (itemsError) throw itemsError
+            if (!response.ok) {
+                if (result.stock_error) {
+                    toast.error("Stock Error", { description: result.error })
+                } else {
+                    throw new Error(result.error || "Failed to create order")
+                }
+                return
+            }
 
             // SUCCESS
             toast.success("Order Placed Successfully!")

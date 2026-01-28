@@ -54,3 +54,15 @@ FOR EACH ROW EXECUTE FUNCTION public.notify_on_new_order();
 -- 5. INDEXING FOR PERFORMANCE
 CREATE INDEX IF NOT EXISTS idx_products_attributes ON public.products USING GIN (attributes);
 CREATE INDEX IF NOT EXISTS idx_secure_conversations_context ON public.secure_conversations (context_type, context_id);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON public.orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_shipping_address ON public.orders(shipping_address_id);
+
+-- 6. ORDER SCHEMA REFINEMENT (Logistics Layer)
+-- Ensure orders have proper shipping and logistics links.
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipping_address_id UUID REFERENCES public.addresses(id);
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS shipping_cost DECIMAL(10,2) DEFAULT 0.00;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS tracking_number TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS carrier TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_status TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_intent_id TEXT;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS payment_method TEXT;

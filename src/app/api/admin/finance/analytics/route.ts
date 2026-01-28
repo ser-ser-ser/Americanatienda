@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server'
  * Returns real marketplace financial data
  */
 export async function GET(request: Request) {
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Verify admin user
     const { data: { user } } = await supabase.auth.getUser()
@@ -51,17 +51,21 @@ export async function GET(request: Request) {
         // 1. Calculate Total GMV (Gross Merchandise Value)
         const { data: orders, error: ordersError } = await supabase
             .from('orders')
-            .select('total, created_at, store_id')
+            .select('total_amount, shipping_cost, created_at, store_id')
             .gte('created_at', startDate.toISOString())
             .eq('status', 'paid') // Only count paid orders
 
         if (ordersError) throw ordersError
 
-        const totalGMV = orders?.reduce((sum, order) => sum + (order.total || 0), 0) || 0
+        const totalGMV = orders?.reduce((sum: number, order: any) => sum + (Number(order.total_amount) || 0), 0) || 0
 
-        // 2. Calculate Net Revenue (Commission @ 10%)
+        // 2. Calculate Net Revenue (Commission @ 10% of subtotal)
         const COMMISSION_RATE = 0.10
-        const netRevenue = totalGMV * COMMISSION_RATE
+        const totalSubtotal = orders?.reduce((sum: number, order: any) => {
+            const subtotal = (Number(order.total_amount) || 0) - (Number(order.shipping_cost) || 0)
+            return sum + subtotal
+        }, 0) || 0
+        const netRevenue = totalSubtotal * COMMISSION_RATE
 
         // 3. Domain Sales (placeholder - will integrate with Spaceship API)
         const domainSales = 0 // TODO: Implement when domain service is ready
@@ -71,13 +75,17 @@ export async function GET(request: Request) {
         const pendingPayouts = 0
 
         // 5. Revenue by Day (for chart)
-        const revenueByDay = orders?.reduce((acc: any, order) => {
+        const revenueByDay = orders?.reduce((acc: any, order: any) => {
             const date = new Date(order.created_at).toLocaleDateString()
             if (!acc[date]) {
                 acc[date] = { gmv: 0, revenue: 0 }
             }
-            acc[date].gmv += order.total || 0
-            acc[date].revenue += (order.total || 0) * COMMISSION_RATE
+            const orderTotal = Number(order.total_amount) || 0
+            const orderShipping = Number(order.shipping_cost) || 0
+            const orderSubtotal = orderTotal - orderShipping
+
+            acc[date].gmv += orderTotal
+            acc[date].revenue += orderSubtotal * COMMISSION_RATE
             return acc
         }, {})
 
@@ -88,12 +96,12 @@ export async function GET(request: Request) {
         }))
 
         // 6. Top Performing Stores
-        const storeRevenue = orders?.reduce((acc: any, order) => {
+        const storeRevenue = orders?.reduce((acc: any, order: any) => {
             if (!order.store_id) return acc
             if (!acc[order.store_id]) {
                 acc[order.store_id] = 0
             }
-            acc[order.store_id] += order.total || 0
+            acc[order.store_id] += Number(order.total_amount) || 0
             return acc
         }, {})
 
@@ -111,7 +119,7 @@ export async function GET(request: Request) {
 
         const topStoresWithNames = topStores.map(ts => ({
             ...ts,
-            name: stores?.find(s => s.id === ts.store_id)?.name || 'Unknown Store'
+            name: stores?.find((s: any) => s.id === ts.store_id)?.name || 'Unknown Store'
         }))
 
         return NextResponse.json({
