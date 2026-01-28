@@ -87,6 +87,15 @@ export async function decryptMessage(
     payload: { encryptedContent: string, encryptedKey: string, iv: string },
     userPrivateKeyJWK: JsonWebKey
 ) {
+    // Basic validation to avoid OperationError or other hard crashes
+    if (!payload?.encryptedContent || !payload?.encryptedKey || !payload?.iv) {
+        return "[Error: Invalid encrypted payload]"
+    }
+
+    if (!userPrivateKeyJWK) {
+        return "[Error: Private key missing]"
+    }
+
     try {
         // 1. Import Private Key
         const privateKey = await window.crypto.subtle.importKey(
@@ -119,11 +128,16 @@ export async function decryptMessage(
             b64Decode(payload.encryptedContent)
         )
 
-        const decoder = new TextDecoder()
-        return decoder.decode(decryptedContentBuffer)
-    } catch (e) {
-        console.error("Decryption failed:", e)
-        return "[Error: Decryption Failed. Check Key Integrity.]"
+        const decoder = new TextEncoder().encode('').constructor === TextDecoder ? new TextDecoder() : new TextDecoder()
+        const result = new TextDecoder().decode(decryptedContentBuffer)
+        return result
+    } catch (e: any) {
+        console.warn("Decryption failed:", e.message || e)
+        // Check for specific security errors
+        if (e.name === 'OperationError') {
+            return "[Cifrado Incompatible: Probablemente enviado con una llave anterior]"
+        }
+        return "[Error de Descifrado]"
     }
 }
 

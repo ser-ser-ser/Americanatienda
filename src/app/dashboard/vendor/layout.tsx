@@ -9,10 +9,13 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { VendorProvider, useVendor } from '@/providers/vendor-provider'
 import { VendorSidebar } from '@/components/vendor/vendor-sidebar'
+import { useNotifications } from '@/providers/notification-provider'
+import { NotificationBell } from '@/components/ui/notification-bell'
 
 // This component handles the logic using the context
 function VendorLayoutContent({ children }: { children: React.ReactNode }) {
     const { stores, activeStore, isLoading, selectStore } = useVendor()
+    const { unreadCount } = useNotifications()
     const pathname = usePathname()
     const router = useRouter()
 
@@ -107,28 +110,29 @@ function VendorLayoutContent({ children }: { children: React.ReactNode }) {
                     </div>
 
                     <div className="flex items-center gap-6">
+                        {/* Notification Bell */}
+                        <NotificationBell />
+
+                        <div className="h-4 w-px bg-white/5"></div>
+
                         {/* Store Selection Filter */}
                         <div className="flex items-center gap-3">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-[9px] font-bold text-zinc-500 leading-none mb-1 uppercase tracking-widest">Active Boutique</p>
-                                <p className="text-xs font-bold text-white leading-none uppercase tracking-tight">{activeStore?.name}</p>
-                            </div>
                             <select
-                                className="appearance-none bg-zinc-900/50 border border-white/5 rounded-lg pl-3 pr-8 py-1.5 text-xs text-white font-bold cursor-pointer transition-all hover:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                                className="appearance-none bg-zinc-900/50 border border-white/5 rounded-lg px-3 py-1.5 text-[10px] text-white font-bold uppercase tracking-widest cursor-pointer transition-all hover:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500 min-w-[140px]"
                                 value={activeStore?.id || ''}
                                 onChange={(e) => selectStore(e.target.value)}
                             >
                                 {stores.map(s => (
                                     <option key={s.id} value={s.id}>
-                                        {s.name}
+                                        {s.name?.toUpperCase()}
                                     </option>
                                 ))}
                             </select>
                         </div>
 
-                        <div className="h-8 w-px bg-white/5"></div>
+                        <div className="h-4 w-px bg-white/5"></div>
 
-                        <Link href="/shops/[slug]" as={`/shops/${activeStore?.slug}`} target="_blank">
+                        <Link href={`/shops/${activeStore?.slug}`} target="_blank">
                             <Button variant="ghost" size="sm" className="text-[9px] uppercase font-bold text-zinc-400 hover:text-cyan-500 gap-2">
                                 <Eye className="h-3.5 w-3.5" /> View Store
                             </Button>

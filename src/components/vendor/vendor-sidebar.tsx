@@ -26,6 +26,8 @@ const NAV_ITEMS = [
     { href: '/dashboard/vendor/products', icon: <Package className="w-4 h-4" />, label: 'Stock & Inventory' },
     { href: '/dashboard/vendor/orders', icon: <ShoppingBag className="w-4 h-4" />, label: 'Orders' },
     { href: '/dashboard/vendor/integrations', icon: <Zap className="w-4 h-4 text-cyan-500" />, label: 'Multichannel Hub' },
+    { href: '/dashboard/vendor/team', icon: <Users className="w-4 h-4 text-cyan-500" />, label: 'Team & Access' },
+    { href: '/dashboard/chat', icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-[#ff007f]"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>, label: 'Direct Messages' },
     { href: '/dashboard/vendor/payments', icon: <CreditCard className="w-4 h-4" />, label: 'Finances' },
     { href: '/dashboard/vendor/shipping', icon: <Truck className="w-4 h-4" />, label: 'Logistics' },
     { href: '/dashboard/vendor/analytics', icon: <Activity className="w-4 h-4" />, label: 'Intelligence' },
@@ -52,14 +54,14 @@ export function VendorSidebar() {
             <nav className="flex-1 px-4 space-y-1">
                 <div className="mb-4">
                     <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest pl-4 mb-2">Management</h3>
-                    {NAV_ITEMS.slice(0, 4).map((item) => (
+                    {NAV_ITEMS.slice(0, 6).map((item) => (
                         <SidebarLink key={item.href} item={item} active={isActive(item.href)} />
                     ))}
                 </div>
 
                 <div>
                     <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest pl-4 mb-2">Operations</h3>
-                    {NAV_ITEMS.slice(4).map((item) => (
+                    {NAV_ITEMS.slice(6).map((item) => (
                         <SidebarLink key={item.href} item={item} active={isActive(item.href)} />
                     ))}
                 </div>

@@ -71,7 +71,7 @@ export async function updateSession(request: NextRequest) {
             // Only run this if we are not already on the setup or waiting pages to avoid loops
             // C. Vendor Status Check (Store)
             // Only run this if we are not already on the setup or waiting pages to avoid loops
-            if (!request.nextUrl.pathname.includes('/setup') && (role === 'seller' || role === 'vendor')) {
+            if (!request.nextUrl.pathname.includes('/setup') && (role === 'seller' || role === 'vendor' || role === 'admin')) {
                 const { data: store } = await supabase
                     .from('stores')
                     .select('status')

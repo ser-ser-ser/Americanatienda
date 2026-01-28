@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -29,6 +29,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const supabase = createClient()
     const router = useRouter()
     const [notifications, setNotifications] = useState<Notification[]>([])
+    const isMounted = useRef(true)
+
+    useEffect(() => {
+        isMounted.current = true
+        return () => { isMounted.current = false }
+    }, [])
 
     const unreadCount = notifications.filter(n => !n.is_read).length
 
@@ -47,7 +53,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 .order('created_at', { ascending: false })
                 .limit(20)
 
-            if (data) setNotifications(data)
+            if (data && isMounted.current) setNotifications(data)
 
             // 2. Subscribe to new notifications
             channel = supabase.channel(`notifications:${user.id}`)
@@ -61,7 +67,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                     },
                     (payload) => {
                         const newNotif = payload.new as Notification
-                        setNotifications(prev => [newNotif, ...prev])
+                        if (isMounted.current) {
+                            setNotifications(prev => [newNotif, ...prev])
+                        }
+
+                        // Play "sonidito" - Using a crisp, premium notification sound
+                        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3') // A shorter, cleaner "Ding"
+                        audio.volume = 0.7
+                        const playPromise = audio.play()
+                        if (playPromise !== undefined) {
+                            playPromise.catch(e => {
+                                console.log("Audio play blocked by browser. This is normal until the user interacts with the dashboard. Error:", e)
+                            })
+                        }
 
                         // Show visible toast for immediate feedback
                         toast(newNotif.title, {

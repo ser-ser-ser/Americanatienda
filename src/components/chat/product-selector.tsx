@@ -28,11 +28,20 @@ export function ProductSelector({ onSelect }: ProductSelectorProps) {
             setLoading(true)
             const { data } = await supabase
                 .from('products')
-                .select('id, name, price, images')
+                .select('id, name, price, images, slug, stores(slug)')
                 .ilike('name', `%${query}%`)
                 .limit(5)
 
-            if (data) setProducts(data)
+            if (data) {
+                const formatted = data.map((p: any) => {
+                    const storeData = Array.isArray(p.stores) ? p.stores[0] : p.stores
+                    return {
+                        ...p,
+                        store_slug: storeData?.slug || 'general'
+                    }
+                })
+                setProducts(formatted)
+            }
             setLoading(false)
         }
 

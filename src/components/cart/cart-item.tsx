@@ -15,17 +15,17 @@ export function CartItem({ item }: CartItemProps) {
     const { product, quantity } = item
 
     return (
-        <div className="flex gap-4 py-4 border-b border-zinc-800">
+        <div className="flex gap-4 py-4 border-b border-white/5 group">
             {/* Image */}
-            <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-zinc-800 bg-zinc-900">
+            <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border border-white/10 bg-zinc-900 group-hover:border-white/20 transition-colors">
                 {(product.images?.[0] || product.image_url) ? (
                     <img
                         src={product.images?.[0] || product.image_url}
                         alt={product.name}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                 ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-zinc-900 text-xs text-zinc-500">
+                    <div className="flex h-full w-full items-center justify-center bg-zinc-900 text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
                         No Image
                     </div>
                 )}
@@ -34,25 +34,25 @@ export function CartItem({ item }: CartItemProps) {
             {/* Details */}
             <div className="flex flex-1 flex-col justify-between">
                 <div>
-                    <h4 className="text-sm font-medium text-white line-clamp-2">{product.name}</h4>
-                    <p className="mt-1 text-sm text-zinc-400">$ {product.price}</p>
+                    <h4 className="text-sm font-bold text-white line-clamp-2 tracking-tight leading-snug">{product.name}</h4>
+                    <p className="mt-1 text-xs font-mono text-zinc-500 uppercase tracking-widest">${Number(product.price).toFixed(2)}</p>
                 </div>
 
                 <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3 bg-zinc-900/50 rounded-lg p-1 border border-white/5">
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-full border-zinc-700 bg-transparent text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                            className="h-7 w-7 rounded-md text-zinc-500 hover:text-white hover:bg-white/5"
                             onClick={() => updateQuantity(product.id, quantity - 1)}
                         >
                             <Minus className="h-3 w-3" />
                         </Button>
-                        <span className="text-sm w-4 text-center text-white">{quantity}</span>
+                        <span className="text-xs font-bold w-4 text-center text-white">{quantity}</span>
                         <Button
-                            variant="outline"
+                            variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-full border-zinc-700 bg-transparent text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                            className="h-7 w-7 rounded-md text-zinc-500 hover:text-white hover:bg-white/5"
                             onClick={() => updateQuantity(product.id, quantity + 1)}
                         >
                             <Plus className="h-3 w-3" />
@@ -62,7 +62,7 @@ export function CartItem({ item }: CartItemProps) {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-zinc-500 hover:text-red-500 hover:bg-transparent"
+                        className="h-8 w-8 text-zinc-700 hover:text-red-500 hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100"
                         onClick={() => removeItem(product.id)}
                     >
                         <Trash2 className="h-4 w-4" />

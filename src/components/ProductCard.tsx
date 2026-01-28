@@ -1,10 +1,11 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { ShoppingCart, Check, Shield, Zap, Wind } from 'lucide-react';
+import { ShoppingCart, Check, Shield, Zap, Wind, MessageSquare } from 'lucide-react';
 import { Product } from '@/types';
 import Link from 'next/link';
 import { useCart } from '@/context/cart-context';
+import { useChat } from '@/providers/chat-provider';
 import { toast } from 'sonner';
 
 interface ProductCardProps {
@@ -13,15 +14,36 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, storeSlug }: ProductCardProps) {
-    const { addItem } = useCart();
+    const { items, addItem, updateQuantity, toggleCart } = useCart();
+    const { startInquiryChat } = useChat();
     const isSexShop = product.store_type === 'sex-shop';
     const isSmokeShop = product.store_type === 'smoke-shop';
+
+    const cartItem = items.find(i => i.product.id === product.id);
+    const quantity = cartItem?.quantity || 0;
 
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         addItem(product);
-        toast.success(`added ${product.name} to cart`);
+    };
+
+    const handleIncrement = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        updateQuantity(product.id, quantity + 1);
+    };
+
+    const handleDecrement = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        updateQuantity(product.id, quantity - 1);
+    };
+
+    const handleMessageSeller = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startInquiryChat(product.store_id, product.id);
     };
 
     return (
@@ -43,6 +65,18 @@ export function ProductCard({ product, storeSlug }: ProductCardProps) {
                         <span className="text-xs mt-2 uppercase tracking-wider font-medium">No Image</span>
                     </div>
                 )}
+
+                {/* Quick Add Overlay for mobile/hover feedback */}
+                {quantity === 0 && (
+                    <div className="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                            onClick={handleAddToCart}
+                            className="bg-black text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transform translate-y-2 group-hover:translate-y-0 transition-all"
+                        >
+                            + Agregar
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Content */}
@@ -60,18 +94,6 @@ export function ProductCard({ product, storeSlug }: ProductCardProps) {
                             <Shield size={10} /> Body Safe
                         </span>
                     )}
-                    {isSexShop && (product.details_sex_shop?.vibration_modes ?? 0) > 0 && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 text-orange-700 text-[10px] font-bold uppercase tracking-wider">
-                            <Zap size={10} /> {product.details_sex_shop?.vibration_modes} Modes
-                        </span>
-                    )}
-
-                    {/* Smoke Shop Specifics */}
-                    {isSmokeShop && product.details_smoke_shop?.glass_thickness_mm && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-700 text-[10px] font-bold uppercase tracking-wider">
-                            <Shield size={10} /> {product.details_smoke_shop.glass_thickness_mm}mm
-                        </span>
-                    )}
                 </div>
 
                 <h3 className="text-base font-medium text-gray-900 line-clamp-2 leading-snug min-h-[2.5rem]" title={product.name}>
@@ -84,12 +106,41 @@ export function ProductCard({ product, storeSlug }: ProductCardProps) {
                         <span className="text-xl font-bold text-gray-900 tracking-tight">${Number(product.price).toFixed(2)}</span>
                     </div>
 
-                    <button
-                        onClick={handleAddToCart}
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white hover:bg-gray-800 active:scale-95 transition-all shadow-md group-hover:shadow-lg z-10 relative"
-                    >
-                        <ShoppingCart size={18} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleMessageSeller}
+                            title="Message Seller"
+                            className="flex items-center justify-center w-10 h-10 rounded-full bg-zinc-100 text-zinc-600 hover:bg-zinc-200 active:scale-95 transition-all z-10 relative"
+                        >
+                            <MessageSquare size={18} />
+                        </button>
+
+                        {quantity > 0 ? (
+                            <div className="flex items-center bg-black rounded-full h-10 px-1 gap-3 shadow-lg z-10 relative">
+                                <button
+                                    onClick={handleDecrement}
+                                    className="w-8 h-8 flex items-center justify-center text-white hover:text-zinc-300 transition-colors"
+                                >
+                                    <span className="text-xl font-bold">−</span>
+                                </button>
+                                <span className="text-white font-bold text-sm min-w-[1ch] text-center">{quantity}</span>
+                                <button
+                                    onClick={handleIncrement}
+                                    className="w-8 h-8 flex items-center justify-center text-white hover:text-zinc-300 transition-colors"
+                                >
+                                    <span className="text-xl font-bold">+</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={handleAddToCart}
+                                title="Add to Cart"
+                                className="flex items-center justify-center w-10 h-10 rounded-full bg-black text-white hover:bg-gray-800 active:scale-95 transition-all shadow-md group-hover:shadow-lg z-10 relative"
+                            >
+                                <ShoppingCart size={18} />
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </Link>

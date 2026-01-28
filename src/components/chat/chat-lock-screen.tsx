@@ -24,9 +24,9 @@ export function ChatLockScreen({ onUnlock }: ChatLockScreenProps) {
             try {
                 const { data: { user }, error: authError } = await supabase.auth.getUser()
                 if (authError || !user) {
-                    console.error("Chat Auth Error:", authError)
-                    // If no user, user needs to re-login. Redirecting.
-                    window.location.href = '/login?next=/dashboard/chat'
+                    console.log("Chat Lock: No user found, allowing parent to handle guest view if needed")
+                    setHasPinConfigured(false) // Trigger setup/auth state
+                    setIsSetupMode(false)
                     return
                 }
 

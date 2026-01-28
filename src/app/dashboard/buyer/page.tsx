@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { useChat } from '@/providers/chat-provider'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export default function BuyerDashboardPage() {
     const supabase = createClient()
@@ -238,7 +239,7 @@ export default function BuyerDashboardPage() {
 
                                     <Button
                                         onClick={() => {
-                                            const storeId = order.order_items?.[0]?.product?.store_id
+                                            const storeId = order.store_id
                                             if (storeId) {
                                                 openContextualChat('order', order.id, [], {
                                                     title: `Order #${order.id.slice(0, 8).toUpperCase()}`,

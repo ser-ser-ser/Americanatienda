@@ -242,7 +242,7 @@ export default function ProductClient({ storeSlug, productSlug }: ProductClientP
                             <Button
                                 variant="ghost"
                                 className="w-full h-12 text-zinc-400 hover:text-white border border-white/10 hover:bg-white/5"
-                                onClick={() => startInquiryChat(store.id, product.id)}
+                                onClick={() => startInquiryChat(store.id, product)}
                             >
                                 <MessageCircle className="mr-2 h-4 w-4" /> Preguntar al vendedor
                             </Button>

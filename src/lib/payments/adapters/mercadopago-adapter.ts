@@ -163,11 +163,11 @@ export class MercadoPagoAdapter {
      * Handle IPN (Instant Payment Notification) webhook
      * Called from /api/webhooks/mercadopago
      */
-    async handleIPN(topic: string, resourceId: string) {
+    async handleIPN(topic: string, resourceId: string, vendorAccessToken?: string) {
         if (topic === 'payment') {
-            return await this.handlePaymentNotification(resourceId)
+            return await this.handlePaymentNotification(resourceId, vendorAccessToken)
         } else if (topic === 'merchant_order') {
-            return await this.handleMerchantOrderNotification(resourceId)
+            return await this.handleMerchantOrderNotification(resourceId, vendorAccessToken)
         }
 
         return { received: true }
@@ -176,10 +176,11 @@ export class MercadoPagoAdapter {
     /**
      * Handle payment notification
      */
-    private async handlePaymentNotification(paymentId: string) {
+    private async handlePaymentNotification(paymentId: string, vendorAccessToken?: string) {
+        const token = vendorAccessToken || this.accessToken
         const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
             headers: {
-                'Authorization': `Bearer ${this.accessToken}`
+                'Authorization': `Bearer ${token}`
             }
         })
 
@@ -209,10 +210,11 @@ export class MercadoPagoAdapter {
     /**
      * Handle merchant order notification
      */
-    private async handleMerchantOrderNotification(orderId: string) {
+    private async handleMerchantOrderNotification(orderId: string, vendorAccessToken?: string) {
+        const token = vendorAccessToken || this.accessToken
         const response = await fetch(`https://api.mercadopago.com/merchant_orders/${orderId}`, {
             headers: {
-                'Authorization': `Bearer ${this.accessToken}`
+                'Authorization': `Bearer ${token}`
             }
         })
 
@@ -233,10 +235,11 @@ export class MercadoPagoAdapter {
     /**
      * Get vendor account details
      */
-    async getAccountDetails(userId: string) {
+    async getAccountDetails(userId: string, vendorAccessToken?: string) {
+        const token = vendorAccessToken || this.accessToken
         const response = await fetch(`https://api.mercadopago.com/users/${userId}`, {
             headers: {
-                'Authorization': `Bearer ${this.accessToken}`
+                'Authorization': `Bearer ${token}`
             }
         })
 

@@ -23,7 +23,8 @@ import {
     Flame,
     Activity,
     LogOut,
-    Plus
+    Plus,
+    Zap
 } from 'lucide-react'
 
 export function AdminSidebar() {
@@ -71,18 +72,17 @@ export function AdminSidebar() {
 
                 {/* MANAGEMENT */}
                 <div>
-                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-4 pl-3">Management</h3>
+                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-4 pl-3">Platform Management</h3>
                     <div className="space-y-1">
                         <NavItem href="/dashboard/admin/roles" icon={<ShieldCheck className="w-4 h-4" />} label="Roles & Permissions" active={isActive('/dashboard/admin/roles')} />
-                        <NavItem href="/dashboard/admin/teams" icon={<Users className="w-4 h-4 text-cyan-500" />} label="Store Teams & Delegation" active={isActive('/dashboard/admin/teams')} />
                         <NavItem href="/dashboard/admin/stores" icon={<Store className="w-4 h-4" />} label="Vendors / Approvals" active={isActive('/dashboard/admin/stores')} />
-                        <NavItem href="/dashboard/admin/users" icon={<Users className="w-4 h-4" />} label="Buyers" active={isActive('/dashboard/admin/users')} />
+                        <NavItem href="/dashboard/admin/users" icon={<Users className="w-4 h-4" />} label="Buyer Accounts" active={isActive('/dashboard/admin/users')} />
                     </div>
                 </div>
 
                 {/* CONTENT */}
                 <div>
-                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-4 pl-3">Content</h3>
+                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-4 pl-3">Global Content</h3>
                     <div className="space-y-1">
                         <NavItem href="/dashboard/admin/editorial" icon={<BookOpen className="w-4 h-4" />} label="Editorial" active={isActive('/dashboard/admin/editorial')} />
                         <NavItem href="/dashboard/admin/club" icon={<Crown className="w-4 h-4 text-amber-500" />} label="The Club" active={isActive('/dashboard/admin/club')} />
@@ -90,14 +90,13 @@ export function AdminSidebar() {
                     </div>
                 </div>
 
-                {/* AMERICANA STORES */}
+                {/* CONTEXT SWITCHING */}
                 <div>
-                    <h3 className="text-[10px] font-bold text-[#ff007f] uppercase tracking-[0.2em] mb-4 pl-3">Americana Stores</h3>
+                    <h3 className="text-[10px] font-bold text-[#ff007f] uppercase tracking-[0.2em] mb-4 pl-3">Context</h3>
                     <div className="px-3 space-y-3">
-                        <StoreSwitcher />
                         <Link href="/dashboard/vendor">
                             <Button variant="outline" className="w-full justify-start border-[#ff007f]/50 text-[#ff007f] hover:bg-[#ff007f]/10 uppercase font-bold text-xs tracking-wider">
-                                <Store className="mr-2 h-4 w-4" /> Go to Stores Admin
+                                <Zap className="mr-2 h-4 w-4" /> Modo Vendedor (Mis Tiendas)
                             </Button>
                         </Link>
                     </div>

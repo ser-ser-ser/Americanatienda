@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Inter } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/context/cart-context";
@@ -18,6 +18,12 @@ const inter = Inter({
     subsets: ["latin"],
     variable: "--font-inter",
 });
+
+export const viewport: Viewport = {
+    themeColor: '#000000',
+    width: 'device-width',
+    initialScale: 1,
+}
 
 export async function generateMetadata(): Promise<Metadata> {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -46,7 +52,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
     const title = siteContent['home_hero_title'] ? `${siteContent['home_hero_title']} | Americana Stores` : 'Americana Stores'
     const description = siteContent['home_hero_description'] || "Premier Online Marketplace. Discover exclusive products from The Red Room, The Lounge, and more."
-    const favicon = siteContent['branding_favicon'] || '/icon.png'
+    const favicon = siteContent['branding_favicon'] || '/globe.svg'
     const ogImage = siteContent['branding_og_image'] || '/opengraph-image.png'
 
     return {
@@ -77,7 +83,6 @@ export async function generateMetadata(): Promise<Metadata> {
             locale: 'es_MX',
             type: 'website',
         },
-        themeColor: '#000000',
         category: 'e-commerce',
     };
 }
@@ -88,9 +93,10 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <body
                 className={`${playfair.variable} ${inter.variable} font-sans antialiased bg-background text-foreground`}
+                suppressHydrationWarning
             >
                 <CartProvider>
                     <ChatProvider>

@@ -5,11 +5,14 @@ import { useEffect, useState } from 'react'
 import { ProductCard } from '@/components/ProductCard'
 import { Footer } from '@/components/footer'
 import Link from 'next/link'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, ShoppingBag } from 'lucide-react'
+import { useCart } from '@/context/cart-context'
+import { Button } from '@/components/ui/button'
 
 // Client component for displaying collection details
 export default function CollectionClient({ slug }: { slug: string }) {
     const supabase = createClient()
+    const { cartCount, toggleCart } = useCart()
     const [loading, setLoading] = useState(true)
     const [category, setCategory] = useState<any>(null)
     const [products, setProducts] = useState<any[]>([])
@@ -84,7 +87,18 @@ export default function CollectionClient({ slug }: { slug: string }) {
                         <ArrowLeft className="h-5 w-5" /> Back to Collections
                     </Link>
                     <span className="text-xl font-serif font-bold tracking-tighter uppercase">{category.name}</span>
-                    <div className="w-24" />
+                    <Button
+                        variant="ghost"
+                        className="text-white hover:bg-white/10 rounded-full h-10 w-10 p-0 relative"
+                        onClick={toggleCart}
+                    >
+                        <ShoppingBag className="h-5 w-5" />
+                        {cartCount > 0 && (
+                            <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-[10px] font-black text-black rounded-full flex items-center justify-center border-2 border-black">
+                                {cartCount}
+                            </span>
+                        )}
+                    </Button>
                 </div>
             </header>
 

@@ -1,6 +1,7 @@
-
 import { ShippingProvider } from './shipping-provider.interface';
 import { ManualAdapter } from './adapters/manual';
+import { UberAdapter } from './adapters/uber-direct';
+import { SoloEnviosAdapter } from './adapters/solo-envios';
 import { createClient } from '@/utils/supabase/server';
 
 export class ShippingFactory {
@@ -15,15 +16,13 @@ export class ShippingFactory {
 
         if (!config) return null;
 
-        if (type === 'local' && config.local_delivery_enabled) {
-            // Check if Uber is active in active_providers array (mock check)
-            /* 
-            if (config.active_providers.includes('uber')) {
-                return new UberAdapter(apiKey...);
-            } 
-            */
+        const activeProviders = config.active_providers as string[] || [];
 
-            // Fallback to Manual Local Delivery
+        if (type === 'local' && config.local_delivery_enabled) {
+            if (activeProviders.includes('uber')) {
+                return new UberAdapter(process.env.UBER_API_KEY || 'mock-key');
+            }
+
             return new ManualAdapter({
                 basePrice: Number(config.local_base_price),
                 radiusKm: Number(config.local_radius_km)
@@ -31,15 +30,18 @@ export class ShippingFactory {
         }
 
         if (type === 'national' && config.national_shipping_enabled) {
-            /* 
-           if (config.active_providers.includes('dhl')) {
-               return new DHLAdapter(...);
-           } 
-           */
+            if (activeProviders.includes('soloenvios')) {
+                // In a real scenario, we'd fetch the API key from carrier_metadata
+                const metadata = config.carrier_metadata as any || {};
+                const soloEnviosKey = metadata.solo_envios_key || process.env.SOLOENVIO_API_KEY || 'mock-key';
+                return new SoloEnviosAdapter(soloEnviosKey);
+            }
 
-            // Fallback: simplified flat rate logic could be wrapped in a 'FlatRateAdapter'
-            // For now returning null as we only implemented ManualAdapter
-            return null;
+            // Fallback to flat rate if no provider is configured
+            return new ManualAdapter({
+                basePrice: Number(config.national_flat_rate),
+                radiusKm: 99999 // Global radius for national shipping fallback
+            });
         }
 
         return null;

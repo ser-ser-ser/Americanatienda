@@ -10,8 +10,10 @@ import { useState, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 import { ProductCardMessage } from './product-card-message'
 import { ProductSelector } from './product-selector'
+import { ChatMessageBubble } from './chat-message-bubble'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChatLockScreen } from './chat-lock-screen'
+import MessageThread from './message-thread'
 
 export function ChatSheet() {
     const {
@@ -24,7 +26,8 @@ export function ChatSheet() {
         sendMessage,
         toggleEphemeralMode,
         isLoading,
-        user
+        user,
+        participantProfiles
     } = useChat()
 
     const [input, setInput] = useState('')
@@ -72,187 +75,92 @@ export function ChatSheet() {
         toggleEphemeralMode(next)
     }
 
-    const [isUnlocked, setIsUnlocked] = useState(false)
-
-    const handleUnlock = () => {
-        setIsUnlocked(true)
-    }
+    const otherParticipant = participantProfiles.find(p => p.id !== user?.id)
 
     return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetContent className="w-full sm:max-w-md p-0 flex flex-col bg-zinc-950 border-white/10 text-white">
-                <SheetTitle className="sr-only">Stealth Chat Interface</SheetTitle>
-                <SheetDescription className="sr-only">Secure messaging with end-to-end encryption</SheetDescription>
-                {!isUnlocked ? (
-                    <div className="h-full w-full">
-                        <ChatLockScreen onUnlock={handleUnlock} />
-                    </div>
-                ) : (
-                    <>
+            <SheetContent className="w-full sm:max-w-md p-0 flex flex-col bg-zinc-950/40 backdrop-blur-3xl border-l border-white/5 text-white shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 via-transparent to-purple-500/5 pointer-events-none" />
+                <SheetTitle className="sr-only">Americana CRM Chat</SheetTitle>
+                <SheetDescription className="sr-only">Direct communication with your clients or stores</SheetDescription>
 
-                        {/* Header */}
-                        <div className="p-4 border-b border-white/10 flex items-center gap-3">
-                            {activeConversationId ? (
-                                <>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 -ml-2 text-zinc-400 hover:text-white"
-                                        onClick={() => setActiveConversationId(null)}
-                                    >
-                                        <ArrowLeft className="h-4 w-4" />
-                                    </Button>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-2">
-                                            <h2 className="font-bold text-sm">
-                                                {activeConversation?.title || (activeConversation?.type === 'support' ? 'Soporte' : 'Chat')}
-                                            </h2>
-                                            {activeConversation?.context_type && (
-                                                <span className="px-1.5 py-0.5 rounded bg-white/10 text-[9px] font-bold uppercase tracking-widest text-zinc-400 border border-white/5">
-                                                    {activeConversation.context_type}: #{activeConversation.context_id?.slice(0, 8)}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <p className="text-xs text-zinc-400 flex items-center gap-1">
-                                            En línea
-                                            {activeConversation?.ephemeral_duration && (
-                                                <span className="text-pink-500 font-medium ml-1 flex items-center gap-0.5">
-                                                    <Clock className="h-3 w-3" />
-                                                    {activeConversation.ephemeral_duration}
-                                                </span>
-                                            )}
-                                        </p>
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={handleEphemeralCycle}
-                                        className={cn("h-8 w-8", activeConversation?.ephemeral_duration ? "text-pink-500" : "text-zinc-500")}
-                                        title="Toggle Disappearing Messages"
-                                    >
-                                        <Clock className="h-4 w-4" />
-                                    </Button>
-                                </>
-                            ) : (
-                                <div>
-                                    <h2 className="font-bold text-lg">Mensajes</h2>
-                                    <p className="text-xs text-zinc-400">Tus conversaciones activas</p>
+                {/* Content Area */}
+                <div className="flex-1 overflow-hidden relative flex flex-col h-full">
+                    {activeConversationId ? (
+                        <MessageThread
+                            conversationId={activeConversationId}
+                            onBack={() => setActiveConversationId(null)}
+                        />
+                    ) : (
+                        <>
+                            {/* List Header */}
+                            <div className="p-5 border-b border-white/5 flex items-center gap-3 relative z-10 bg-white/5 backdrop-blur-md shrink-0">
+                                <div className="py-2">
+                                    <h2 className="font-black text-xl tracking-tighter uppercase italic">CRM Americana</h2>
+                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.3em]">Premier Business Suite</p>
                                 </div>
-                            )}
-                        </div>
+                            </div>
 
-                        {/* Content */}
-                        <div className="flex-1 overflow-hidden relative">
-                            {activeConversationId ? (
-                                // MESSAGES VIEW
-                                <div className="h-full flex flex-col">
-                                    <ScrollArea className="flex-1 p-4">
-                                        <div className="space-y-4">
-                                            {messages.map((msg) => {
-                                                // TODO: We need to know who is 'me' to align right/left properly
-                                                // Using a simple check for now if we had user ID in context, 
-                                                // but for now let's assume if I sent it, it's me.
-                                                // Actually, I need the current user ID in the ChatProvider context to compare.
-                                                // For MVP, I'll align all to left unless I add user to context export.
-                                                // Let's create a visual distinction based on sender_id.
-
-                                                // Quick Fix: We need 'user' from useChat to know "me". 
-                                                // I'll update the Provider to export 'user' later. 
-                                                // For now, let's just render them.
-                                                const isMe = user?.id === msg.sender_id
-                                                return (
-                                                    <div key={msg.id} className={cn("flex flex-col gap-1", isMe ? "items-end" : "items-start")}>
-                                                        <div className={cn(
-                                                            "max-w-[85%] rounded-2xl px-4 py-2 text-sm text-white",
-                                                            isMe ? "bg-indigo-600 rounded-tr-sm" : "bg-zinc-800 rounded-tl-sm"
-                                                        )}>
-                                                            {msg.metadata?.type === 'product_card' ? (
-                                                                <ProductCardMessage
-                                                                    id={msg.metadata.product_id}
-                                                                    name={msg.metadata.product_name}
-                                                                    price={msg.metadata.product_price}
-                                                                    imageUrl={msg.metadata.product_image}
-                                                                />
-                                                            ) : (
-                                                                msg.content
-                                                            )}
-                                                        </div>
-                                                        <span className="text-[10px] text-zinc-500 px-1">
-                                                            {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                        </span>
-                                                    </div>
-                                                )
-                                            })}
-                                            <div ref={scrollRef} />
-                                        </div>
-                                    </ScrollArea>
-
-                                    {/* Input Area */}
-                                    <div className="p-4 border-t border-white/10 bg-zinc-950">
-                                        <div className="flex gap-2">
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                    <Button size="icon" variant="ghost" className="text-zinc-500 hover:text-white shrink-0">
-                                                        <Store className="h-5 w-5" />
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-auto p-0 bg-transparent border-none" align="start" side="top">
-                                                    <ProductSelector onSelect={handleProductSelect} />
-                                                </PopoverContent>
-                                            </Popover>
-                                            <Input
-                                                value={input}
-                                                onChange={(e) => setInput(e.target.value)}
-                                                onKeyDown={handleKeyDown}
-                                                placeholder="Escribe un mensaje..."
-                                                className="bg-zinc-900 border-white/10 text-white focus-visible:ring-indigo-500"
-                                            />
-                                            <Button onClick={handleSend} size="icon" className="bg-indigo-600 hover:bg-indigo-700 shrink-0">
-                                                <Send className="h-4 w-4" />
+                            {/* CONVERSATIONS LIST VIEW */}
+                            <ScrollArea className="flex-1">
+                                <div className="p-2 space-y-1">
+                                    {!user ? (
+                                        <div className="flex flex-col items-center justify-center py-20 px-6 text-center space-y-4">
+                                            <div className="h-12 w-12 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-500">
+                                                <User className="h-6 w-6" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-bold text-white">Identity Required</h3>
+                                                <p className="text-xs text-zinc-500 mt-1">You must be logged in to chat with boutiques and secure your data.</p>
+                                            </div>
+                                            <Button
+                                                onClick={() => router.push(`/login?next=${pathname}`)}
+                                                className="w-full bg-white text-black hover:bg-zinc-200"
+                                            >
+                                                Sign In to Americana
                                             </Button>
                                         </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                // CONVERSATIONS LIST VIEW
-                                <ScrollArea className="h-full">
-                                    <div className="p-2 space-y-1">
-                                        {conversations.length === 0 ? (
-                                            <div className="text-center py-10 text-zinc-500 text-sm">
-                                                No tienes mensajes aún.
-                                            </div>
-                                        ) : (
-                                            conversations.map(conv => (
-                                                <button
-                                                    key={conv.id}
-                                                    onClick={() => setActiveConversationId(conv.id)}
-                                                    className="w-full text-left p-3 rounded-lg hover:bg-white/5 transition-colors flex items-center gap-3 group"
-                                                >
-                                                    <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:text-white group-hover:bg-zinc-700 transition-colors">
+                                    ) : conversations.length === 0 ? (
+                                        <div className="text-center py-10 text-zinc-500 text-sm">
+                                            No tienes mensajes aún.
+                                        </div>
+                                    ) : (
+                                        conversations.map(conv => (
+                                            <button
+                                                key={conv.id}
+                                                onClick={() => setActiveConversationId(conv.id)}
+                                                className="w-full text-left p-3 rounded-xl hover:bg-white/5 transition-colors flex items-center gap-3 group border border-transparent hover:border-white/5"
+                                            >
+                                                <div className="relative">
+                                                    <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-700 transition-colors">
                                                         {conv.type === 'support' ? <User className="h-5 w-5" /> : <Store className="h-5 w-5" />}
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex justify-between items-baseline mb-1">
-                                                            <span className="font-semibold text-sm truncate text-zinc-200">
-                                                                {conv.title || (conv.type === 'support' ? 'Soporte' : 'Consulta')}
-                                                            </span>
-                                                            <span className="text-[10px] text-zinc-500">
-                                                                {new Date(conv.updated_at).toLocaleDateString()}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-xs text-zinc-500 truncate">
-                                                            Ver conversación...
-                                                        </p>
+                                                    <div className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-zinc-950 bg-emerald-500 shadow-[0_0_5px_#10b981]" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex justify-between items-baseline mb-0.5">
+                                                        <span className="font-bold text-xs truncate text-zinc-100 uppercase tracking-tighter">
+                                                            {conv.title || (conv.type === 'support' ? 'Soporte Americana' : 'Consulta de Producto')}
+                                                        </span>
+                                                        <span className="text-[9px] font-bold text-zinc-600 uppercase">
+                                                            {new Date(conv.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
                                                     </div>
-                                                </button>
-                                            ))
-                                        )}
-                                    </div>
-                                </ScrollArea>
-                            )}
-                        </div>
-                    </>
-                )}
+                                                    <p className="text-[11px] text-zinc-500 truncate font-medium">
+                                                        {conv.last_message_preview || 'Sin mensajes nuevos'}
+                                                    </p>
+                                                </div>
+                                                {conv.last_message_preview && (
+                                                    <div className="h-2 w-2 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                                                )}
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </>
+                    )}
+                </div>
             </SheetContent>
         </Sheet>
     )

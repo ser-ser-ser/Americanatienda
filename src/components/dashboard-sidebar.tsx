@@ -24,9 +24,12 @@ import {
     Bell,
     Lock,
     TrendingUp,
-    Palette
+    Palette,
+    MessageSquare,
+    ShoppingCart
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
+import { useCart } from '@/context/cart-context'
 
 export function DashboardSidebar() {
     const [store, setStore] = useState<any>(null)
@@ -37,6 +40,7 @@ export function DashboardSidebar() {
     const pathname = usePathname()
     const searchParams = useSearchParams()
     const supabase = createClient()
+    const { cartCount, toggleCart } = useCart()
 
     const handleSignOut = async () => {
         await supabase.auth.signOut()
@@ -71,8 +75,8 @@ export function DashboardSidebar() {
 
     const isActive = (path: string) => pathname === path
 
-    // Hide standard sidebar on Admin Pages (they use their own AdminSidebar)
-    if (pathname?.startsWith('/dashboard/admin')) {
+    // Hide standard sidebar on Admin Pages AND Vendor Pages (they use their own Sidebars)
+    if (pathname?.startsWith('/dashboard/admin') || pathname?.startsWith('/dashboard/vendor')) {
         return null
     }
 
@@ -207,6 +211,24 @@ export function DashboardSidebar() {
                         <Link href="/dashboard/buyer">
                             <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/buyer') || isActive('/dashboard') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}`}>
                                 <ShoppingBag className="mr-3 h-5 w-5" /> My Orders
+                            </Button>
+                        </Link>
+                        {/* Added Shopping Cart explicitly */}
+                        <button
+                            onClick={toggleCart}
+                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-zinc-400 hover:text-white hover:bg-white/5 rounded-md transition-all group"
+                        >
+                            <ShoppingCart className="h-5 w-5 group-hover:text-primary transition-colors" /> Cart
+                            {cartCount > 0 && (
+                                <span className="ml-auto h-5 px-1.5 rounded-full bg-primary text-[10px] font-black text-black flex items-center justify-center">
+                                    {cartCount}
+                                </span>
+                            )}
+                        </button>
+                        <Link href="/dashboard/chat">
+                            <Button variant="ghost" className={`w-full justify-start ${isActive('/dashboard/chat') ? 'text-primary bg-primary/10' : 'text-zinc-400 hover:text-white hover:bg-white/5 relative'}`}>
+                                <MessageSquare className="mr-3 h-5 w-5" /> Messages
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-pink-500 animate-pulse" />
                             </Button>
                         </Link>
                         <Link href="/dashboard/buyer/addresses">

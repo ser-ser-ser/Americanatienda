@@ -62,6 +62,7 @@ export async function POST(request: Request) {
             national_flat_rate: body.national_flat_rate,
             free_shipping_threshold: body.free_shipping_threshold,
             active_providers: body.active_providers || [],
+            carrier_metadata: body.carrier_metadata || {},
             updated_at: new Date().toISOString()
         }, { onConflict: 'store_id' })
         .select()

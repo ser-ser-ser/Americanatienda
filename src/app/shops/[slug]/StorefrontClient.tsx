@@ -2,7 +2,7 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Loader2, ShoppingBag, Menu, ArrowLeft, Search, Instagram, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
@@ -21,11 +21,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useCart } from '@/context/cart-context'
 
 export default function StorefrontClient() {
     const params = useParams()
     const router = useRouter()
     const supabase = createClient()
+    const { cartCount, toggleCart } = useCart()
     const [loading, setLoading] = useState(true)
     const [store, setStore] = useState<any>(null)
     const [categories, setCategories] = useState<any[]>([])
@@ -33,6 +35,12 @@ export default function StorefrontClient() {
     const [activeCategory, setActiveCategory] = useState<string>('all')
     const [user, setUser] = useState<any>(null)
     const { startInquiryChat } = useChat()
+    const isMounted = useRef(true)
+
+    useEffect(() => {
+        isMounted.current = true
+        return () => { isMounted.current = false }
+    }, [])
 
     useEffect(() => {
         const fetchStore = async () => {
@@ -47,18 +55,20 @@ export default function StorefrontClient() {
 
             if (error || !storeData) {
                 console.error('Store not found', error)
-                setLoading(false)
+                if (isMounted.current) setLoading(false)
                 return
             }
 
-            setStore(storeData)
+            if (isMounted.current) {
+                setStore(storeData)
+            }
 
             // Get Categories
             const { data: cats } = await supabase
                 .from('store_categories')
                 .select('*')
                 .eq('store_id', storeData.id)
-            setCategories(cats || [])
+            if (isMounted.current) setCategories(cats || [])
 
             // Get Products
             const { data: prods } = await supabase
@@ -67,9 +77,11 @@ export default function StorefrontClient() {
                 .eq('store_id', storeData.id)
                 .eq('is_active', true)
                 .order('created_at', { ascending: false })
-            setProducts(prods || [])
 
-            setLoading(false)
+            if (isMounted.current) {
+                setProducts(prods || [])
+                setLoading(false)
+            }
         }
 
         const fetchUser = async () => {
@@ -77,7 +89,7 @@ export default function StorefrontClient() {
             if (user) {
                 // get profile for avatar
                 const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-                setUser(data || user)
+                if (isMounted.current) setUser(data || user)
             }
         }
 
@@ -128,15 +140,26 @@ export default function StorefrontClient() {
                     </div>
 
                     <div className="flex items-center gap-6">
-                        <Button variant="ghost" className="text-white hover:bg-white/10 rounded-full h-10 w-10 p-0">
-                            <Search className="h-5 w-5" />
+                        <Button
+                            variant="ghost"
+                            className="text-white hover:bg-white/10 rounded-full h-10 w-10 p-0"
+                            onClick={() => startInquiryChat(store.id)}
+                        >
+                            <MessageCircle className="h-5 w-5" />
                         </Button>
-                        <Link href="/cart">
-                            <Button variant="ghost" className="text-white hover:bg-white/10 rounded-full h-10 w-10 p-0 relative">
-                                <ShoppingBag className="h-5 w-5" />
-                                {/* Cart Count Badge would go here */}
-                            </Button>
-                        </Link>
+
+                        <Button
+                            variant="ghost"
+                            className="text-white hover:bg-white/10 rounded-full h-10 w-10 p-0 relative"
+                            onClick={toggleCart}
+                        >
+                            <ShoppingBag className="h-5 w-5" />
+                            {cartCount > 0 && (
+                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-[10px] font-black text-black rounded-full flex items-center justify-center border-2 border-black">
+                                    {cartCount}
+                                </span>
+                            )}
+                        </Button>
 
                         <NotificationBell />
 
@@ -184,18 +207,20 @@ export default function StorefrontClient() {
             <section className="relative bg-zinc-900 pb-24">
                 {/* Cover Image */}
                 <div className="h-64 sm:h-80 md:h-96 w-full relative bg-zinc-800 overflow-hidden">
-                    {store.cover_image_url ? (
-                        <Image src={store.cover_image_url} alt="Cover" fill className="object-cover" />
-                    ) : store.theme_color ? (
-                        <div
-                            className="w-full h-full"
-                            style={{ background: `linear-gradient(to bottom right, ${store.theme_color}, #000000)` }}
-                        />
-                    ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950" />
-                    )}
-                    <div className="absolute inset-0 bg-black/20" />
-                </div>
+                    {
+                        store.cover_image_url ? (
+                            <Image src={store.cover_image_url} alt="Cover" fill className="object-cover" />
+                        ) : store.theme_color ? (
+                            <div
+                                className="w-full h-full"
+                                style={{ background: `linear-gradient(to bottom right, ${store.theme_color}, #000000)` }}
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950" />
+                        )
+                    }
+                    < div className="absolute inset-0 bg-black/20" />
+                </div >
 
                 <div className="max-w-7xl mx-auto px-6 relative">
                     <div className="flex flex-col md:flex-row items-end md:items-end gap-6 -mt-16 sm:-mt-20 relative z-10">
@@ -259,10 +284,10 @@ export default function StorefrontClient() {
                         </nav>
                     )}
                 </div>
-            </section>
+            </section >
 
             {/* Product Grid */}
-            <section className="px-6 py-24 bg-black">
+            < section className="px-6 py-24 bg-black" >
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
                         <div>
@@ -288,10 +313,10 @@ export default function StorefrontClient() {
                         </div>
                     )}
                 </div>
-            </section>
+            </section >
 
             {/* Reusing Global Footer for now, or Store Footer could be customized */}
-            <Footer />
-        </div>
+            < Footer />
+        </div >
     )
 }

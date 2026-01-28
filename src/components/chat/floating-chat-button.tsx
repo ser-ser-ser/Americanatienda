@@ -6,8 +6,8 @@ import { MessageCircle } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useEffect, useState } from 'react'
 
-export function FloatingChatButton() {
-    const { startSupportChat, isOpen, setIsOpen } = useChat()
+export function FloatingChatButton({ vendorId }: { vendorId?: string }) {
+    const { startSupportChat, startConversation, isOpen, setIsOpen } = useChat()
     const [hidden, setHidden] = useState(false)
 
     // Hide button if chat is open to avoid clutter (optional, depends on preference)
@@ -27,7 +27,13 @@ export function FloatingChatButton() {
                 className="fixed bottom-6 right-6 z-50"
             >
                 <Button
-                    onClick={() => setIsOpen(true)}
+                    onClick={() => {
+                        if (vendorId) {
+                            startConversation(vendorId)
+                        } else {
+                            startSupportChat()
+                        }
+                    }}
                     size="lg"
                     className="rounded-full h-14 w-14 shadow-2xl bg-rose-600 hover:bg-rose-700 text-white p-0"
                 >

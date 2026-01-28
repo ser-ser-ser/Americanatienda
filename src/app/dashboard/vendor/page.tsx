@@ -14,7 +14,8 @@ import {
     Eye,
     Truck,
     ArrowRight,
-    Zap
+    Zap,
+    MessageSquare
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,52 +34,114 @@ function VendorDashboardContent() {
         balance: 0,
         inTransit: 0,
         pending: 0,
-        lowStockCount: 0
+        lowStockCount: 0,
+        inquiriesCount: 0
     })
+    const [userProfile, setUserProfile] = useState<any>(null)
+
+    const [recentInquiries, setRecentInquiries] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
-    // Mock Global Activity Data
-    const activityFeed = [
-        { type: 'like', user: '@Julian_V', text: 'favorited', item: 'Silk Blazer', time: '2 MINUTES AGO', location: 'LONDON, UK' },
-        { type: 'order', user: 'Boutique Moderne', text: 'placed Order #8829', time: '15 MINUTES AGO', location: 'PARIS, FR' },
-        { type: 'view', count: 12, text: 'Users are currently viewing', item: "Winter Collection '24", time: 'JUST NOW', isLive: true },
-        { type: 'ship', text: 'Order #8810 has reached', item: 'Customs Clearance', time: '1 HOUR AGO', location: 'NYC, USA' }
-    ]
-
-    const inventoryHealth = [
-        { name: 'Black Noir Silk Blazer', sku: 'HQ-9921-X', stock: 2, status: 'Critically Low', image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=100&h=100&fit=crop' },
-        { name: 'Velvet Stiletto Heels', sku: 'VT-4402-L', stock: 5, status: 'Restock Suggested', image: 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=100&h=100&fit=crop' }
-    ]
+    const [realActivity, setRealActivity] = useState<any[]>([])
+    const [realInventory, setRealInventory] = useState<any[]>([])
 
     useEffect(() => {
         if (!activeStore) return
 
-        const fetchStats = async () => {
+        const fetchStatsAndProfiles = async () => {
             try {
-                // 1. Fetch Stripe Balance (Mock for now or use real if available)
-                // In a real scenario, we'd fetch this from our API
-                const stripeBalance = 124500.00 // Mocking to match screenshot
+                // 0. Fetch logged-in user profile
+                const { data: { user } } = await supabase.auth.getUser()
+                if (user) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single()
+                    setUserProfile(profile)
+                }
 
-                // 2. Fetch Active Shipments
-                // const { count: inTransitCount } = await supabase
-                //     .from('orders') // Assuming orders table
-                //     .select('*', { count: 'exact', head: true })
-                //     .eq('store_id', activeStore.id)
-                //     .eq('status', 'in_transit')
+                // 2. Fetch Active Shipments & Total Sales for this store
+                const { data: storeOrders } = await supabase
+                    .from('orders')
+                    .select('total_amount, status')
+                    .eq('store_id', activeStore.id)
+
+                const totalBalance = (storeOrders || [])
+                    .filter((o: any) => o.status !== 'cancelled')
+                    .reduce((sum: number, o: any) => sum + Number(o.total_amount), 0)
+
+                const activeShipmentsCount = (storeOrders || [])
+                    .filter((o: any) => ['processing', 'shipped', 'in_transit'].includes(o.status))
+                    .length
 
                 // 3. Fetch Low Stock
-                const { count: lowStock } = await supabase
+                const { data: lowStockProducts } = await supabase
                     .from('products')
-                    .select('*', { count: 'exact', head: true })
+                    .select('name, sku, stock, images')
                     .eq('store_id', activeStore.id)
-                    .lt('stock', 5)
+                    .lt('stock', 10)
+                    .order('stock', { ascending: true })
+                    .limit(5)
+
+                if (lowStockProducts) {
+                    setRealInventory(lowStockProducts.map(p => ({
+                        name: p.name,
+                        sku: p.sku || 'NO-SKU',
+                        stock: p.stock,
+                        status: p.stock < 3 ? 'Critically Low' : 'Restock Suggested',
+                        image: p.images?.[0] || 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=100&h=100&fit=crop'
+                    })))
+                }
+
+                // 4. Fetch Chat Inquiries & Real Activity
+                const { data: recentOrders } = await supabase
+                    .from('orders')
+                    .select('*, profiles(full_name)')
+                    .eq('store_id', activeStore.id)
+                    .order('created_at', { ascending: false })
+                    .limit(4)
+
+                if (recentOrders) {
+                    setRealActivity(recentOrders.map(o => ({
+                        type: 'order',
+                        user: (o.profiles as any)?.full_name || 'Nuevo Cliente',
+                        text: `placed Order #${o.id.slice(0, 8).toUpperCase()}`,
+                        item: `$${o.total_amount}`,
+                        time: new Date(o.created_at).toLocaleTimeString(),
+                    })))
+                }
+
+                // 4. Fetch Real Activity
+                const { data: inquiryList } = await supabase
+                    .from('conversations')
+                    .select('*, conversation_participants(user_id)')
+                    .eq('store_id', activeStore.id)
+                    .eq('type', 'inquiry')
+                    .order('updated_at', { ascending: false })
+                    .limit(5)
+
+                const processedInquiries = await Promise.all((inquiryList || []).map(async (inq: any) => {
+                    const buyerId = inq.conversation_participants?.find((p: any) => p.user_id !== user?.id)?.user_id
+                    if (buyerId) {
+                        const { data: buyerProfile } = await supabase
+                            .from('profiles')
+                            .select('full_name, avatar_url')
+                            .eq('id', buyerId)
+                            .single()
+                        return { ...inq, buyer: buyerProfile }
+                    }
+                    return inq
+                }))
 
                 setStats({
-                    balance: stripeBalance,
-                    inTransit: 42, // Mock from Screenshot
-                    pending: 8,
-                    lowStockCount: lowStock || 8
+                    balance: totalBalance,
+                    inTransit: activeShipmentsCount,
+                    pending: (storeOrders || []).filter((o: any) => o.status === 'processing').length,
+                    lowStockCount: lowStockProducts?.length || 0,
+                    inquiriesCount: processedInquiries.length
                 })
+                setRecentInquiries(processedInquiries)
             } catch (error) {
                 console.error('Error fetching stats:', error)
             } finally {
@@ -86,7 +149,7 @@ function VendorDashboardContent() {
             }
         }
 
-        fetchStats()
+        fetchStatsAndProfiles()
     }, [activeStore])
 
     if (isVendorLoading || loading) {
@@ -111,13 +174,17 @@ function VendorDashboardContent() {
                     <p className="text-zinc-500 text-sm mt-1">Real-time performance and luxury logistics monitoring.</p>
                 </div>
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-[#121217] rounded-full border border-white/10">
-                        <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center border border-white/5">
-                            <span className="font-serif italic text-xs">AM</span>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10 backdrop-blur-md">
+                        <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center border border-white/5 overflow-hidden">
+                            {userProfile?.avatar_url ? (
+                                <img src={userProfile.avatar_url} className="h-full w-full object-cover" />
+                            ) : (
+                                <span className="font-serif italic text-xs uppercase">{userProfile?.full_name?.substring(0, 2) || 'AM'}</span>
+                            )}
                         </div>
                         <div className="text-right">
-                            <div className="text-xs font-bold text-white">Alexander McQueen</div>
-                            <div className="text-[9px] text-zinc-500 uppercase tracking-widest">Verified Studio</div>
+                            <div className="text-xs font-bold text-white tracking-tight">{userProfile?.full_name || 'Vendor Admin'}</div>
+                            <div className="text-[8px] text-zinc-500 uppercase tracking-[0.2em] font-black">{activeStore?.name}</div>
                         </div>
                     </div>
                 </div>
@@ -139,9 +206,11 @@ function VendorDashboardContent() {
                                         <DollarSign className="h-4 w-4" />
                                     </div>
                                 </div>
-                                <div className="text-3xl font-bold font-mono text-white mb-2">$124,500.00</div>
+                                <div className="text-3xl font-bold font-mono text-white mb-2">
+                                    ${stats.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
                                 <div className="text-xs font-medium text-green-500 flex items-center gap-1">
-                                    <TrendingUp className="h-3 w-3" /> +12.5% <span className="text-zinc-600">vs last month</span>
+                                    <TrendingUp className="h-3 w-3" /> Real-time <span className="text-zinc-600">from orders</span>
                                 </div>
                             </CardContent>
                         </Card>
@@ -155,24 +224,24 @@ function VendorDashboardContent() {
                                         <Package className="h-4 w-4" />
                                     </div>
                                 </div>
-                                <div className="text-3xl font-bold font-mono text-white mb-2">42</div>
-                                <div className="text-xs font-medium text-green-500 flex items-center gap-1">
-                                    <TrendingUp className="h-3 w-3" /> +5.2% <span className="text-zinc-600">8 out for delivery</span>
+                                <div className="text-3xl font-bold font-mono text-white mb-2">{stats.inTransit}</div>
+                                <div className="text-xs font-medium text-blue-500 flex items-center gap-1">
+                                    <Truck className="h-3 w-3" /> {stats.pending} <span className="text-zinc-600">pending processing</span>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Inventory Alerts */}
+                        {/* Inquiries */}
                         <Card className="bg-[#121217] border-zinc-800 relative overflow-hidden border-l-2 border-l-cyan-500">
                             <CardContent className="p-6">
                                 <div className="flex justify-between items-start mb-4">
-                                    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Low Stock Alerts</div>
+                                    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Nuevas Consultas</div>
                                     <div className="p-1.5 bg-cyan-500/10 rounded text-cyan-500">
-                                        <AlertTriangle className="h-4 w-4" />
+                                        <MessageSquare className="h-4 w-4" />
                                     </div>
                                 </div>
-                                <div className="text-3xl font-bold font-mono text-white mb-2">{stats.lowStockCount}</div>
-                                <div className="text-xs font-bold text-cyan-500">Immediate Action Required</div>
+                                <div className="text-3xl font-bold font-mono text-white mb-2">{stats.inquiriesCount}</div>
+                                <div className="text-xs font-bold text-cyan-500">Chat CRM Activo</div>
                             </CardContent>
                         </Card>
                     </div>
@@ -227,60 +296,106 @@ function VendorDashboardContent() {
                             <h3 className="text-lg font-bold text-white">Inventory Health</h3>
                         </div>
                         <div className="space-y-4">
-                            {inventoryHealth.map((item, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg transition-colors group cursor-pointer border border-transparent hover:border-zinc-800">
-                                    <div className="flex items-center gap-4">
-                                        <img src={item.image} className="h-10 w-10 rounded object-cover bg-zinc-800" />
-                                        <div>
-                                            <div className="text-sm font-bold text-white">{item.name}</div>
-                                            <div className="text-[10px] text-zinc-500 font-mono">{item.sku}</div>
+                            {realInventory.length === 0 ? (
+                                <div className="text-zinc-600 text-xs py-4 text-center">Todo el inventario està saludable.</div>
+                            ) : (
+                                realInventory.map((item, i) => (
+                                    <div key={i} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg transition-colors group cursor-pointer border border-transparent hover:border-zinc-800">
+                                        <div className="flex items-center gap-4">
+                                            <img src={item.image} className="h-10 w-10 rounded object-cover bg-zinc-800" />
+                                            <div>
+                                                <div className="text-sm font-bold text-white">{item.name}</div>
+                                                <div className="text-[10px] text-zinc-500 font-mono">{item.sku}</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-sm font-bold text-cyan-500">{item.stock} Items Left</div>
+                                            <div className="text-[10px] text-zinc-500 uppercase tracking-wider">{item.status}</div>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="text-sm font-bold text-cyan-500">{item.stock} Items Left</div>
-                                        <div className="text-[10px] text-zinc-500 uppercase tracking-wider">{item.status}</div>
-                                    </div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </div>
 
                 </div>
 
-                {/* RIGHT COLUMN (1/3 width) - Global Activity Sidebar */}
+                {/* RIGHT COLUMN (1/3 width) - Activity & Leads */}
                 <div className="space-y-6">
+                    {/* Recent Leads / Inquiries */}
                     <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-bold text-white tracking-tight">Active Inquiries</h3>
+                        {stats.inquiriesCount > 0 && <Badge className="bg-cyan-500 text-black font-bold h-5 px-1.5">{stats.inquiriesCount}</Badge>}
+                    </div>
+
+                    <div className="space-y-3">
+                        {recentInquiries.length === 0 ? (
+                            <div className="p-4 rounded-xl border border-dashed border-zinc-800 text-center text-zinc-600 text-[10px] uppercase tracking-widest">
+                                Sin nuevas consultas
+                            </div>
+                        ) : (
+                            recentInquiries.map((inq, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => router.push(`/dashboard/chat?id=${inq.id}`)}
+                                    className="w-full bg-[#121217] border border-zinc-800/80 p-3 rounded-xl hover:bg-white/5 transition-all group text-left"
+                                >
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="text-[10px] font-bold text-cyan-500 tracking-widest uppercase">{inq.title || 'Consulta de Producto'}</span>
+                                        <span className="text-[9px] text-zinc-600">{new Date(inq.updated_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <div className="text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">
+                                        {inq.buyer?.full_name || 'Solicitud de Cliente'}
+                                    </div>
+                                    <div className="text-xs text-zinc-500 mt-1 line-clamp-1">{inq.last_message_preview || 'Abriendo canal de comunicación...'}</div>
+                                </button>
+                            ))
+                        )}
+                        <Button
+                            variant="link"
+                            onClick={() => router.push('/dashboard/chat')}
+                            className="text-zinc-500 hover:text-cyan-500 text-[10px] uppercase tracking-widest font-bold p-0 h-auto"
+                        >
+                            Ver Centro de Mensajes <ArrowRight className="h-3 w-3 ml-1" />
+                        </Button>
+                    </div>
+
+                    <div className="pt-4 flex items-center gap-3">
                         <h3 className="text-lg font-bold text-white">Global Activity</h3>
                         <div className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
                     </div>
 
                     <div className="relative border-l border-zinc-800 ml-3 space-y-8 py-2">
-                        {activityFeed.map((event, i) => (
-                            <div key={i} className="relative pl-8">
-                                {/* Icon Bubble */}
-                                <div className={`absolute -left-4 top-0 h-8 w-8 rounded-full border-4 border-[#09090b] flex items-center justify-center bg-[#1a1a20]`}>
-                                    {event.type === 'like' && <Heart className="h-3 w-3 text-cyan-500 fill-cyan-500" />}
-                                    {event.type === 'order' && <ShoppingCart className="h-3 w-3 text-green-500" />}
-                                    {event.type === 'view' && <Eye className="h-3 w-3 text-cyan-500" />}
-                                    {event.type === 'ship' && <Truck className="h-3 w-3 text-blue-500" />}
-                                </div>
+                        {realActivity.length === 0 ? (
+                            <div className="text-zinc-600 text-[10px] uppercase tracking-widest pl-8">Sin actividad reciente</div>
+                        ) : (
+                            realActivity.map((event, i) => (
+                                <div key={i} className="relative pl-8">
+                                    {/* Icon Bubble */}
+                                    <div className={`absolute -left-4 top-0 h-8 w-8 rounded-full border-4 border-[#09090b] flex items-center justify-center bg-[#1a1a20]`}>
+                                        {event.type === 'like' && <Heart className="h-3 w-3 text-cyan-500 fill-cyan-500" />}
+                                        {event.type === 'order' && <ShoppingCart className="h-3 w-3 text-green-500" />}
+                                        {event.type === 'view' && <Eye className="h-3 w-3 text-cyan-500" />}
+                                        {event.type === 'ship' && <Truck className="h-3 w-3 text-blue-500" />}
+                                    </div>
 
-                                {/* Content */}
-                                <div>
-                                    <div className="text-sm text-zinc-300">
-                                        {event.user && <span className="font-bold text-white">{event.user} </span>}
-                                        {event.count && <span className="font-bold text-cyan-500">{event.count} Users </span>}
-                                        <span className="text-zinc-400">{event.text} </span>
-                                        <span className="font-bold text-white">{event.item}</span>
-                                    </div>
-                                    <div className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-wider flex items-center gap-2">
-                                        {event.time}
-                                        {event.location && <span>• {event.location}</span>}
-                                        {event.isLive && <span className="text-cyan-500">• LIVE STREAM</span>}
+                                    {/* Content */}
+                                    <div>
+                                        <div className="text-sm text-zinc-300">
+                                            {event.user && <span className="font-bold text-white">{event.user} </span>}
+                                            {event.count && <span className="font-bold text-cyan-500">{event.count} Users </span>}
+                                            <span className="text-zinc-400">{event.text} </span>
+                                            <span className="font-bold text-white">{event.item}</span>
+                                        </div>
+                                        <div className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-wider flex items-center gap-2">
+                                            {event.time}
+                                            {event.location && <span>• {event.location}</span>}
+                                            {event.isLive && <span className="text-cyan-500">• LIVE STREAM</span>}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
 
                     <Button variant="outline" className="w-full border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 mt-4 text-xs font-bold uppercase tracking-widest py-6">
