@@ -46,36 +46,25 @@ export default async function CategoryPage({ params }: { params: { storeSlug: st
     const { storeSlug, categorySlug } = await params
     const supabase = await createClient()
 
-    // Fetch Store
-    const { data: store } = await supabase
-        .from('stores')
-        .select('id, name, slug')
-        .eq('slug', storeSlug)
-        .single()
-
-    if (!store) {
-        notFound()
-    }
-
-    // Fetch Category
-    const { data: category } = await supabase
+    // Optimized: Fetch Category, Store, and Products in a single query
+    const { data } = await supabase
         .from('store_categories')
-        .select('id, name, slug')
-        .eq('store_id', store.id)
+        .select(`
+            id, name, slug,
+            store:stores!inner(id, name, slug),
+            products(*)
+        `)
         .eq('slug', categorySlug)
+        .eq('store.slug', storeSlug)
+        .eq('products.is_active', true)
         .single()
 
-    if (!category) {
+    if (!data) {
         notFound()
     }
 
-    // Fetch Products
-    const { data: products } = await supabase
-        .from('products')
-        .select('*')
-        .eq('store_id', store.id)
-        .eq('store_category_id', category.id)
-        .eq('is_active', true)
+    const { store, products } = data as any
+    const category = data
 
     return (
         <div className="min-h-screen bg-background">
@@ -97,7 +86,7 @@ export default async function CategoryPage({ params }: { params: { storeSlug: st
             <div className="container mx-auto max-w-6xl px-4 py-12">
                 {products && products.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {products.map((product) => (
+                        {products.map((product: any) => (
                             <Link key={product.id} href={`/${store.slug}/${category.slug}/${product.slug}`} className="group">
                                 <Card className="flex flex-col h-full border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 transition-colors">
                                     <div className="aspect-square bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden rounded-t-xl">
