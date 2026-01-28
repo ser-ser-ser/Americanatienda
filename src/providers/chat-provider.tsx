@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { User } from '@supabase/supabase-js'
 import { toast } from 'sonner'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -46,7 +47,7 @@ type ChatContextType = {
     startInquiryChat: (storeId: string, productId?: string) => Promise<void>
     openContextualChat: (type: 'order' | 'product' | 'support', id: string, participants: string[], metadata?: any) => Promise<void>
     toggleEphemeralMode: (duration: string | null) => Promise<void>
-    user: any
+    user: User | null
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
@@ -59,7 +60,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const [messages, setMessages] = useState<Message[]>([])
     const [isOpen, setIsOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
-    const [user, setUser] = useState<any>(null)
+    const [user, setUser] = useState<User | null>(null)
     const [userPrivateKey, setUserPrivateKey] = useState<JsonWebKey | null>(null)
     const pathname = usePathname()
 
