@@ -1,6 +1,5 @@
-'use client'
 
-import { Footer } from '@/components/footer'
+import { SiteFooter } from '@/components/site-footer'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -77,7 +76,7 @@ export default function TermsPage() {
                     </div>
                 </div>
             </main>
-            <Footer />
+            <SiteFooter />
         </div>
     )
 }

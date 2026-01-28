@@ -7,9 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Loader2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Footer } from '@/components/footer'
 
-export default function VisionaryTributeClient() {
+interface VisionaryTributeClientProps {
+    footer: React.ReactNode
+}
+
+export default function VisionaryTributeClient({ footer }: VisionaryTributeClientProps) {
     const params = useParams()
     const supabase = createClient()
     const [loading, setLoading] = useState(true)
@@ -120,7 +123,7 @@ export default function VisionaryTributeClient() {
                 </div>
             </main>
 
-            <Footer />
+            {footer}
         </div>
     )
 }

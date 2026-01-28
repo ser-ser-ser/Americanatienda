@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Loader2, ShoppingBag, Menu, ArrowLeft, Search, Instagram, MessageCircle } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Footer } from '@/components/footer'
 import { ProductCard } from '@/components/ProductCard'
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useChat } from '@/providers/chat-provider'
@@ -22,7 +21,11 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export default function StorefrontClient() {
+interface StorefrontClientProps {
+    footer: React.ReactNode
+}
+
+export default function StorefrontClient({ footer }: StorefrontClientProps) {
     const params = useParams()
     const router = useRouter()
     const supabase = createClient()
@@ -291,7 +294,7 @@ export default function StorefrontClient() {
             </section>
 
             {/* Reusing Global Footer for now, or Store Footer could be customized */}
-            <Footer />
+            {footer}
         </div>
     )
 }

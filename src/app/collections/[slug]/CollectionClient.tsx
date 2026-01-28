@@ -3,12 +3,11 @@
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { ProductCard } from '@/components/ProductCard'
-import { Footer } from '@/components/footer'
 import Link from 'next/link'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 
 // Client component for displaying collection details
-export default function CollectionClient({ slug }: { slug: string }) {
+export default function CollectionClient({ slug, footer }: { slug: string, footer: React.ReactNode }) {
     const supabase = createClient()
     const [loading, setLoading] = useState(true)
     const [category, setCategory] = useState<any>(null)
@@ -116,7 +115,7 @@ export default function CollectionClient({ slug }: { slug: string }) {
                 </div>
             </main>
 
-            <Footer />
+            {footer}
         </div>
     )
 }
