@@ -46,11 +46,13 @@ export function ProductCard({ product, storeSlug }: ProductCardProps) {
         startInquiryChat(product.store_id, product.id);
     };
 
+    const productUrl = `/shops/${storeSlug}/product/${product.slug || product.id}`;
+
     return (
-        <Link href={`/shops/${storeSlug}/product/${product.slug}`} className="group flex flex-col bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer block">
+        <Link href={productUrl} className="group flex flex-col bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden cursor-pointer">
 
             {/* Image Container */}
-            <div className="relative aspect-[4/3] w-full bg-gray-50 overflow-hidden">
+            <div className="relative aspect-4/3 w-full bg-gray-50 overflow-hidden">
                 {(product.images?.[0] || product.image_url) ? (
                     <Image
                         src={product.images?.[0] || product.image_url}
@@ -68,10 +70,12 @@ export function ProductCard({ product, storeSlug }: ProductCardProps) {
 
                 {/* Quick Add Overlay for mobile/hover feedback */}
                 {quantity === 0 && (
-                    <div className="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="absolute inset-0 bg-zinc-100/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* RESTORED ORIGINAL OVERLAY LOGIC (Simplified as the aspect-4/3 fix in previous turn might have broken layout) */}
+                        {/* The user provided aspect-4/3 replacement for the overlay div which was WRONG in previous turn (it was absolute inset-0). Changing it back to absolute inset-0 but keeping structure */}
                         <button
                             onClick={handleAddToCart}
-                            className="bg-black text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transform translate-y-2 group-hover:translate-y-0 transition-all"
+                            className="bg-black text-white px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transform translate-y-2 group-hover:translate-y-0 transition-all shadow-xl"
                         >
                             + Agregar
                         </button>
@@ -96,9 +100,18 @@ export function ProductCard({ product, storeSlug }: ProductCardProps) {
                     )}
                 </div>
 
-                <h3 className="text-base font-medium text-gray-900 line-clamp-2 leading-snug min-h-[2.5rem]" title={product.name}>
-                    {product.name}
-                </h3>
+                <div className="flex justify-between items-start mb-2 h-14">
+                    <Link href={productUrl} className="flex-1">
+                        <h3 className="font-semibold text-sm text-zinc-900 line-clamp-2 hover:underline decoration-zinc-400 underline-offset-2 transition-all" title={product.name}>
+                            {product.name}
+                        </h3>
+                    </Link>
+                    <div className="flex flex-col items-end shrink-0 ml-2">
+                        <span className="font-bold text-sm text-zinc-900">${product.price.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <p className="text-xs text-zinc-500 line-clamp-2 min-h-10 mb-3">{product.description}</p>
 
                 <div className="flex items-end justify-between mt-4 pt-4 border-t border-gray-50">
                     <div className="flex flex-col">

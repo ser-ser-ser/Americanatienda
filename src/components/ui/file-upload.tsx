@@ -241,7 +241,7 @@ export function FileUpload({
                     </div>
 
                     <div className="py-4 flex items-center gap-4">
-                        <span className="text-sm text-zinc-400 min-w-[3rem]">Zoom</span>
+                        <span className="text-sm text-zinc-400 min-w-12">Zoom</span>
                         <Slider
                             value={[zoom]}
                             min={1}

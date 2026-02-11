@@ -85,9 +85,9 @@ export default function StoreDesignPage() {
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-6 py-12">
                 {/* Info Banner */}
-                <div className="mb-8 p-6 bg-gradient-to-r from-[#ff007f]/10 to-transparent border border-[#ff007f]/20 rounded-xl">
+                <div className="mb-8 p-6 bg-linear-to-r from-[#ff007f]/10 to-transparent border border-[#ff007f]/20 rounded-xl">
                     <div className="flex items-start gap-4">
-                        <Sparkles className="h-6 w-6 text-[#ff007f] flex-shrink-0 mt-1" />
+                        <Sparkles className="h-6 w-6 text-[#ff007f] shrink-0 mt-1" />
                         <div>
                             <h3 className="font-bold text-white mb-2">Professional Design Templates</h3>
                             <p className="text-zinc-400 text-sm leading-relaxed">

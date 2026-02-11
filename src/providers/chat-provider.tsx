@@ -41,7 +41,7 @@ type ChatContextType = {
     setIsOpen: (open: boolean) => void
     sendMessage: (content: string, metadata?: any) => Promise<void>
     startSupportChat: () => Promise<void>
-    startInquiryChat: (storeId: string, productId?: string) => Promise<void>
+    startInquiryChat: (storeId: string, productData?: any) => Promise<void>
     openContextualChat: (type: 'order' | 'product' | 'support', id: string, participants: string[], metadata?: any) => Promise<void>
     toggleEphemeralMode: (duration: string | null) => Promise<void>
     bubbleColors: { me: string, other: string }

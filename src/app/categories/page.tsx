@@ -35,7 +35,7 @@ export default function CategoriesPage() {
                 // For now, let's link to /collections/[slug] (we might need to build this too)
                 // or just to a search page with filter?
 
-                const mapped = data.map(cat => ({
+                const mapped = (data as any[]).map((cat: any) => ({
                     label: cat.name,
                     link: `/collections/${cat.slug}`, // New route needed? Or use existing?
                     image: cat.image_url
@@ -105,7 +105,7 @@ export default function CategoriesPage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="mb-16 text-center"
                 >
-                    <h1 className="text-5xl md:text-7xl font-serif font-black mb-6 bg-clip-text text-transparent bg-gradient-to-b from-white to-zinc-600">
+                    <h1 className="text-5xl md:text-7xl font-serif font-black mb-6 bg-clip-text text-transparent bg-linear-to-b from-white to-zinc-600">
                         Collections
                     </h1>
                     <p className="text-zinc-400 max-w-2xl mx-auto text-lg font-light">
@@ -126,7 +126,7 @@ export default function CategoriesPage() {
                             <motion.div
                                 key={idx}
                                 variants={itemVariants}
-                                className="group relative aspect-[3/4] overflow-hidden rounded-2xl border border-white/10"
+                                className="group relative aspect-3/4 overflow-hidden rounded-2xl border border-white/10"
                             >
                                 <Link href={cat.link} className="block w-full h-full">
                                     <div className="absolute inset-0 bg-zinc-900">
@@ -148,7 +148,7 @@ export default function CategoriesPage() {
                                                 />
                                             )
                                         ) : (
-                                            <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-black" />
+                                            <div className="w-full h-full bg-linear-to-br from-zinc-800 to-black" />
                                         )}
                                     </div>
 

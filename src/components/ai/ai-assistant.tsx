@@ -39,7 +39,7 @@ export function AIAssistant() {
         return (
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-8 right-28 h-14 w-14 bg-gradient-to-tr from-pink-600 to-purple-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 transition-transform animate-bounce hover:animate-none z-50 group"
+                className="fixed bottom-8 right-28 h-14 w-14 bg-linear-to-tr from-pink-600 to-purple-600 rounded-full flex items-center justify-center text-white shadow-2xl hover:scale-110 transition-transform animate-bounce hover:animate-none z-50 group"
             >
                 <Sparkles className="h-6 w-6 group-hover:rotate-12 transition-transform" />
             </button>

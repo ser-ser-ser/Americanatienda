@@ -176,7 +176,7 @@ export default function VendorTeamPage() {
                                 members.map((member) => (
                                     <div key={member.id} className="p-6 flex items-center justify-between hover:bg-white/5 transition-colors group">
                                         <div className="flex items-center gap-4">
-                                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-zinc-800 to-black border border-white/10 flex items-center justify-center font-bold text-zinc-400">
+                                            <div className="h-8 w-8 rounded-full bg-linear-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs ring-2 ring-white shadow-sm">
                                                 {member.user?.full_name?.[0] || member.user?.email?.[0].toUpperCase()}
                                             </div>
                                             <div>

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Send, ArrowLeft, Store, User, Clock } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { ProductCardMessage } from './product-card-message'
 import { ProductSelector } from './product-selector'
@@ -30,6 +31,8 @@ export function ChatSheet() {
         participantProfiles
     } = useChat()
 
+    const router = useRouter()
+    const pathname = usePathname()
     const [input, setInput] = useState('')
     const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -80,7 +83,7 @@ export function ChatSheet() {
     return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetContent className="w-full sm:max-w-md p-0 flex flex-col bg-zinc-950/40 backdrop-blur-3xl border-l border-white/5 text-white shadow-[0_0_50px_rgba(0,0,0,0.5)]">
-                <div className="absolute inset-0 bg-gradient-to-b from-indigo-500/5 via-transparent to-purple-500/5 pointer-events-none" />
+                <div className="absolute inset-0 bg-linear-to-b from-indigo-500/5 via-transparent to-purple-500/5 pointer-events-none" />
                 <SheetTitle className="sr-only">Americana CRM Chat</SheetTitle>
                 <SheetDescription className="sr-only">Direct communication with your clients or stores</SheetDescription>
 

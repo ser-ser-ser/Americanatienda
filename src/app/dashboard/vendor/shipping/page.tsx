@@ -236,9 +236,11 @@ export default function ShippingManagementPage() {
                                             Generate Label
                                         </Button>
                                     ) : (
-                                        <Button size="sm" variant="outline" className="h-8 border-zinc-700 hover:bg-zinc-800 text-xs">
-                                            <Navigation className="mr-2 h-3 w-3" /> Track
-                                        </Button>
+                                        <Link href={`/dashboard/vendor/shipments/${order.id}/track`}>
+                                            <Button size="sm" variant="outline" className="h-8 border-zinc-700 hover:bg-zinc-800 text-xs">
+                                                <Navigation className="mr-2 h-3 w-3" /> Track
+                                            </Button>
+                                        </Link>
                                     )}
                                     <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-500">
                                         <MoreVertical className="h-4 w-4" />

@@ -133,7 +133,7 @@ export default function LiveTrackingPage() {
 
                     {/* Dark Map Placeholder (CSS Pattern) */}
                     <div className="absolute inset-0 bg-[#111] opacity-90 pattern-grid-lg text-blue-500/5" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-linear-to-t from-[#09090b] via-transparent to-transparent pointer-events-none" />
 
                     {/* Mock Map UI Elements */}
                     <div className="relative z-10 flex flex-col items-center">

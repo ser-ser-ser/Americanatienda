@@ -127,7 +127,7 @@ export function ChatLockScreen({ onUnlock }: ChatLockScreenProps) {
         <div className="h-screen w-full bg-[#000000] text-white flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
 
             {/* Background Ambience */}
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900/40 via-black to-black pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-zinc-900/40 via-black to-black pointer-events-none" />
 
             <div className="z-10 w-full max-w-sm flex flex-col items-center gap-8">
 

@@ -115,7 +115,7 @@ export default function VendorIntegrationsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <Card className="md:col-span-2 bg-gradient-to-br from-zinc-900 to-black border-zinc-800 p-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
+                    <Card className="md:col-span-2 bg-linear-to-br from-zinc-900 to-black border-zinc-800 p-8 flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
                         <div className="absolute top-0 right-0 p-4 opacity-10">
                             <Globe className="h-32 w-32 rotate-12" />
                         </div>

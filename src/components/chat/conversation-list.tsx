@@ -2,6 +2,7 @@ import React from "react"
 import { Search } from "lucide-react"
 import { useChat } from "@/providers/chat-provider"
 import { formatDistanceToNow } from "date-fns"
+import { useVendor } from "@/providers/vendor-provider"
 
 interface ConversationListProps {
     selectedId: string | null
@@ -10,6 +11,12 @@ interface ConversationListProps {
 
 export default function ConversationList({ selectedId, onSelect }: ConversationListProps) {
     const { conversations, isLoading, user, participantProfiles } = useChat()
+    const { activeStore } = useVendor()
+
+    const filteredConversations = conversations.filter(c => {
+        if (!activeStore) return true
+        return c.store_id === activeStore.id
+    })
 
     if (isLoading) {
         return (
@@ -34,12 +41,12 @@ export default function ConversationList({ selectedId, onSelect }: ConversationL
 
             {/* List */}
             <div className="px-2 pb-6 space-y-1">
-                {conversations.length === 0 ? (
+                {filteredConversations.length === 0 ? (
                     <div className="p-12 text-center text-zinc-600 text-[10px] uppercase tracking-[0.3em] font-black">
-                        Sin mensajes aún
+                        {activeStore ? `Sin mensajes para ${activeStore.name}` : 'Sin mensajes aún'}
                     </div>
                 ) : (
-                    conversations.map((conv) => {
+                    filteredConversations.map((conv) => {
                         const otherProfile = participantProfiles.find(p => conv.participants.includes(p.id) && p.id !== user?.id)
                         const displayName = otherProfile?.full_name || conv.title || 'Consulta Americana'
                         const isSelected = selectedId === conv.id
@@ -62,7 +69,7 @@ export default function ConversationList({ selectedId, onSelect }: ConversationL
                                         {otherProfile?.avatar_url ? (
                                             <img src={otherProfile.avatar_url} className="h-full w-full object-cover" />
                                         ) : (
-                                            <div className="h-full w-full bg-gradient-to-br from-zinc-800 to-zinc-950 flex items-center justify-center">
+                                            <div className="h-full w-full bg-linear-to-br from-zinc-800 to-zinc-950 flex items-center justify-center">
                                                 {displayName[0]}
                                             </div>
                                         )}

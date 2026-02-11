@@ -92,12 +92,12 @@ export default function VendorAnalyticsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-baseline gap-2">
-                            <div className="text-3xl font-bold text-white font-mono">$124,500.00</div>
-                            <span className="text-xs text-green-500 font-bold flex items-center">
-                                <TrendingUp className="h-3 w-3 mr-1" /> +12.5%
+                            <div className="text-3xl font-bold text-white font-mono">$0.00</div>
+                            <span className="text-xs text-zinc-500 font-bold flex items-center">
+                                <TrendingUp className="h-3 w-3 mr-1" /> 0%
                             </span>
                         </div>
-                        <Progress value={75} className="h-1 mt-4 bg-zinc-800" indicatorClassName="bg-cyan-500" />
+                        <Progress value={0} className="h-1 mt-4 bg-zinc-800" indicatorClassName="bg-cyan-500" />
                     </CardContent>
                 </Card>
 
@@ -108,10 +108,7 @@ export default function VendorAnalyticsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-baseline gap-2">
-                            <div className="text-3xl font-bold text-white font-mono">4.2%</div>
-                            <span className="text-xs text-green-500 font-bold flex items-center">
-                                <TrendingUp className="h-3 w-3 mr-1" /> +0.8%
-                            </span>
+                            <div className="text-3xl font-bold text-white font-mono">0%</div>
                         </div>
                         <div className="text-[10px] text-zinc-500 mt-2">of global marketplace volume</div>
                     </CardContent>
@@ -124,12 +121,9 @@ export default function VendorAnalyticsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-baseline gap-2">
-                            <div className="text-3xl font-bold text-white font-mono">842</div>
-                            <span className="text-xs text-green-500 font-bold flex items-center">
-                                <TrendingUp className="h-3 w-3 mr-1" /> +15%
-                            </span>
+                            <div className="text-3xl font-bold text-white font-mono">0</div>
                         </div>
-                        <div className="text-[10px] text-zinc-500 mt-2">32 items added this month</div>
+                        <div className="text-[10px] text-zinc-500 mt-2">No active products</div>
                     </CardContent>
                 </Card>
 
@@ -140,10 +134,9 @@ export default function VendorAnalyticsPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-baseline gap-2">
-                            <div className="text-3xl font-bold text-white font-mono">48.5</div>
+                            <div className="text-3xl font-bold text-white font-mono">0</div>
                             <span className="text-xs text-zinc-500 font-bold">units/day</span>
                         </div>
-                        <div className="text-[10px] text-cyan-500 mt-2 font-bold">+2.1 vs last week</div>
                     </CardContent>
                 </Card>
             </div>
@@ -209,7 +202,7 @@ export default function VendorAnalyticsPage() {
                     {/* Global Impact Card */}
                     <Card className="bg-[#121217] border-zinc-800 h-[300px] flex flex-col justify-between overflow-hidden relative">
                         {/* Background Graphic */}
-                        <div className="absolute inset-0 opacity-20 bg-gradient-to-tr from-[#09090b] to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 opacity-20 bg-linear-to-tr from-[#09090b] to-transparent pointer-events-none" />
 
                         <CardContent className="p-8 relative z-10 flex flex-col h-full justify-between">
                             <div>
@@ -280,8 +273,8 @@ export default function VendorAnalyticsPage() {
                                             <div className="flex justify-between text-[10px] mb-1">
                                                 <span className="text-zinc-400">{item.itemsLeft} items left</span>
                                                 <span className={`font-bold ${item.status === 'Critically Low' ? 'text-red-500' :
-                                                        item.status === 'Warning' ? 'text-orange-500' :
-                                                            item.status === 'Healthy' ? 'text-green-500' : 'text-zinc-500'
+                                                    item.status === 'Warning' ? 'text-orange-500' :
+                                                        item.status === 'Healthy' ? 'text-green-500' : 'text-zinc-500'
                                                     }`}>{item.status}</span>
                                             </div>
                                             <Progress

@@ -27,11 +27,16 @@ export default function DashboardDispatcher() {
             const role = profile?.role || 'buyer'
 
             if (role === 'admin') {
-                router.replace('/dashboard/admin')
+                router.replace('/dashboard/admin/stats') // Go specifically to stats to avoid top-level layout ambiguity
             } else if (role === 'seller' || role === 'vendor') {
-                router.replace('/dashboard/vendor')
+                // For vendors, check if we should go to setup or dashboard
+                const { data: stores } = await supabase.from('stores').select('id').eq('owner_id', user.id).limit(1)
+                if (!stores || stores.length === 0) {
+                    router.replace('/dashboard/vendor/setup')
+                } else {
+                    router.replace('/dashboard/vendor')
+                }
             } else {
-                // Buyer or No Role - Send to New Buyer Dashboard
                 router.replace('/dashboard/buyer')
             }
         }
@@ -40,9 +45,11 @@ export default function DashboardDispatcher() {
     }, [router, supabase])
 
     return (
-        <div className="min-h-screen bg-black flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
-            <span className="ml-2 text-zinc-500">Redirecting...</span>
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[#ff007f]" />
+            <span className="mt-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest animate-pulse">
+                Sincronizando Accesos...
+            </span>
         </div>
     )
 }

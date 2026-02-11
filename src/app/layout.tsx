@@ -101,12 +101,10 @@ export default function RootLayout({
                 <CartProvider>
                     <ChatProvider>
                         <NotificationProvider>
-                            <main className="min-h-screen bg-background font-sans antialiased relative">
-                                <CartSheet />
-                                {children}
-                            </main>
-                            <Toaster />
+                            {children}
+                            <CartSheet />
                             <ChatSheet />
+                            <Toaster />
                         </NotificationProvider>
                     </ChatProvider>
                 </CartProvider>

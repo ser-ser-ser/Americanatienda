@@ -1,8 +1,8 @@
 'use client'
 
 import React from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import LinkNext from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
@@ -16,99 +16,149 @@ import {
     Settings2,
     Users,
     ShieldCheck,
-    BookOpen,
-    Crown,
-    Image,
-    GlassWater,
-    Flame,
     Activity,
     LogOut,
     Plus,
-    Zap
+    Zap,
+    ChevronDown,
+    ChevronRight,
+    Globe,
+    Database,
+    ShieldAlert,
+    BarChart3,
+    FileText,
+    BookOpen,
+    Crown,
+    Image as ImageIcon,
+    MessageSquare
 } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
+
+const NAV_GROUPS = [
+    {
+        label: 'PLATFORM',
+        iconColor: 'text-pink-500',
+        items: [
+            { href: '/dashboard/admin/stats', icon: BarChart3, label: 'Global Stats' },
+            { href: '/dashboard/admin/finance', icon: CreditCard, label: 'Finance Matrix' },
+        ]
+    },
+    {
+        label: 'LOGISTICS & OPS',
+        iconColor: 'text-emerald-500',
+        items: [
+            { href: '/dashboard/admin/logistics', icon: Truck, label: 'Logistics Hub' },
+            { href: '/dashboard/admin/shipping', icon: Package, label: 'Shipping Registry' },
+            { href: '/dashboard/admin/tracking-monitor', icon: Activity, label: 'Tracking Monitor' },
+        ]
+    },
+    {
+        label: 'ECOSYSTEM',
+        iconColor: 'text-blue-500',
+        items: [
+            { href: '/dashboard/admin/categories', icon: LayoutDashboard, label: 'Global Categories' },
+            { href: '/dashboard/admin/portals', icon: Store, label: 'Stores Portals' },
+            { href: '/dashboard/admin/domain-registry', icon: Globe, label: 'Domain Registry' },
+        ]
+    },
+    {
+        label: 'MANAGEMENT',
+        iconColor: 'text-amber-500',
+        items: [
+            { href: '/dashboard/admin/roles', icon: ShieldCheck, label: 'Roles & Permissions' },
+            { href: '/dashboard/admin/stores', icon: Store, label: 'Vendors / Approvals' },
+            { href: '/dashboard/admin/users', icon: Users, label: 'Buyer Accounts' },
+            { href: '/dashboard/chat', icon: MessageSquare, label: 'Direct Messages' },
+        ]
+    },
+    {
+        label: 'CONTENT',
+        iconColor: 'text-amber-500',
+        items: [
+            { href: '/dashboard/admin/editorial', icon: BookOpen, label: 'Editorial' },
+            { href: '/dashboard/admin/club', icon: Crown, label: 'The Club' },
+            { href: '/dashboard/admin/media', icon: ImageIcon, label: 'Media Library' },
+        ]
+    },
+    {
+        label: 'TECHNICAL',
+        iconColor: 'text-cyan-500',
+        items: [
+            { href: '/dashboard/admin/api-registry', icon: Zap, label: 'Global API Registry' },
+            { href: '/dashboard/admin/architecture', icon: Database, label: 'System Health' },
+            { href: '/dashboard/admin/error-logs', icon: ShieldAlert, label: 'Error Logs' },
+        ]
+    }
+]
 
 export function AdminSidebar() {
     const pathname = usePathname()
-
     const isActive = (path: string) => pathname === path
 
     return (
         <aside className="w-72 border-r border-[#222222] bg-[#0a0a0a] flex flex-col shrink-0 z-50 h-screen font-sans">
             <div className="p-8 pb-4">
-                <div className="flex items-center gap-4 mb-8">
-                    {/* Pink Circle Logo (Restored) */}
-                    <div className="relative flex items-center justify-center h-10 w-10 bg-black/50 rounded-xl border border-white/5">
+                <LinkNext href="/" className="flex items-center gap-4 mb-10 group">
+                    <div className="relative flex items-center justify-center h-10 w-10 bg-black/50 rounded-xl border border-white/5 group-hover:border-[#ff007f]/50 transition-all">
                         <div className="h-4 w-4 bg-[#ff007f] rounded-full animate-pulse z-10 shadow-[0_0_10px_#ff007f]" />
                         <div className="absolute inset-0 bg-[#ff007f]/20 rounded-full animate-ping opacity-20" />
                     </div>
                     <div>
-                        <h1 className="text-white text-base font-bold leading-tight tracking-tighter font-display">AMERICANA</h1>
+                        <h1 className="text-white text-base font-bold leading-tight tracking-tighter font-display uppercase">AMERICANA</h1>
                         <p className="text-[#ff007f] text-[10px] font-bold tracking-[0.3em] uppercase">Marketplace OS</p>
                     </div>
+                </LinkNext>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 space-y-2 custom-scrollbar pb-10">
+                {NAV_GROUPS.map((group) => (
+                    <SidebarGroup key={group.label} group={group} pathname={pathname} />
+                ))}
+
+                <div className="pt-8">
+                    <h3 className="text-[10px] font-bold text-[#ff007f] uppercase tracking-[0.2em] mb-4 pl-4">Americana Stores</h3>
+                    <div className="px-2 space-y-3">
+                        <StoreSwitcher />
+                        <Button asChild variant="outline" className="w-full justify-start border-[#ff007f]/50 text-[#ff007f] hover:bg-[#ff007f]/10 uppercase font-bold text-[10px] tracking-widest h-9">
+                            <LinkNext href="/dashboard/vendor">
+                                <Store className="mr-2 h-3.5 w-3.5" /> Go to Stores Admin
+                            </LinkNext>
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            {/* Scrollable Nav Area */}
-            <div className="flex-1 overflow-y-auto px-6 space-y-8 custom-scrollbar">
-
-                {/* DASHBOARD */}
-                <NavItem href="/dashboard/admin" icon={<LayoutDashboard className="w-4 h-4" />} label="Command Center" active={isActive('/dashboard/admin')} />
-
-                {/* PLATFORM */}
-                <div>
-                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-4 pl-3">Platform</h3>
-                    <div className="space-y-1">
-                        <NavItem href="/dashboard/admin/stats" icon={<Activity className="w-4 h-4 text-pink-500" />} label="Marketplace Stats" active={isActive('/dashboard/admin/stats')} />
-                        <NavItem href="/dashboard/admin/cms" icon={<Layout className="w-4 h-4 text-[#ff007f]" />} label="Site Editor (CMS)" active={isActive('/dashboard/admin/cms')} />
-                        <NavItem href="/dashboard/admin/site-config" icon={<Settings2 className="w-4 h-4" />} label="Americana Admin Settings" active={isActive('/dashboard/admin/site-config')} />
-
-                        <NavItem href="/dashboard/admin/finance" icon={<CreditCard className="w-4 h-4 text-rose-500" />} label="Finance Matrix" active={isActive('/dashboard/admin/finance')} />
-                        <NavItem href="/dashboard/admin/logistics" icon={<Truck className="w-4 h-4 text-emerald-500" />} label="Logistics Hub" active={isActive('/dashboard/admin/logistics')} />
-                        <NavItem href="/dashboard/admin/portals" icon={<Store className="w-4 h-4 text-pink-500" />} label="Stores Portals" active={isActive('/dashboard/admin/portals')} />
-                        <NavItem href="/dashboard/admin/categories" icon={<LayoutDashboard className="w-4 h-4" />} label="Categories" active={isActive('/dashboard/admin/categories')} />
-                        <NavItem href="/dashboard/admin/niche" icon={<Activity className="w-4 h-4" />} label="Niche" active={isActive('/dashboard/admin/niche')} />
+            <div className="p-6 border-t border-[#222] bg-[#0d0d0d]">
+                <div className="flex items-center gap-3 mb-6 p-3 rounded-xl bg-white/5 border border-white/10 group cursor-default">
+                    <div className="relative flex items-center justify-center h-10 w-10 bg-black rounded-lg border border-white/10">
+                        <Users className="w-5 h-5 text-zinc-500 group-hover:text-white transition-colors" />
+                        <div className="absolute -top-1 -right-1 h-3 w-3 bg-[#ff007f] rounded-full border-2 border-black" />
                     </div>
-                </div>
-
-                {/* MANAGEMENT */}
-                <div>
-                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-4 pl-3">Platform Management</h3>
-                    <div className="space-y-1">
-                        <NavItem href="/dashboard/admin/roles" icon={<ShieldCheck className="w-4 h-4" />} label="Roles & Permissions" active={isActive('/dashboard/admin/roles')} />
-                        <NavItem href="/dashboard/admin/stores" icon={<Store className="w-4 h-4" />} label="Vendors / Approvals" active={isActive('/dashboard/admin/stores')} />
-                        <NavItem href="/dashboard/admin/users" icon={<Users className="w-4 h-4" />} label="Buyer Accounts" active={isActive('/dashboard/admin/users')} />
+                    <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-black text-white uppercase tracking-wider truncate">Master Admin</p>
+                        <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest truncate">Level 05 Access</p>
                     </div>
-                </div>
-
-                {/* CONTENT */}
-                <div>
-                    <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-4 pl-3">Global Content</h3>
-                    <div className="space-y-1">
-                        <NavItem href="/dashboard/admin/editorial" icon={<BookOpen className="w-4 h-4" />} label="Editorial" active={isActive('/dashboard/admin/editorial')} />
-                        <NavItem href="/dashboard/admin/club" icon={<Crown className="w-4 h-4 text-amber-500" />} label="The Club" active={isActive('/dashboard/admin/club')} />
-                        <NavItem href="/dashboard/admin/media" icon={<Image className="w-4 h-4" />} label="Media Library" active={isActive('/dashboard/admin/media')} />
-                    </div>
-                </div>
-
-                {/* CONTEXT SWITCHING */}
-                <div>
-                    <h3 className="text-[10px] font-bold text-[#ff007f] uppercase tracking-[0.2em] mb-4 pl-3">Context</h3>
-                    <div className="px-3 space-y-3">
-                        <Link href="/dashboard/vendor">
-                            <Button variant="outline" className="w-full justify-start border-[#ff007f]/50 text-[#ff007f] hover:bg-[#ff007f]/10 uppercase font-bold text-xs tracking-wider">
-                                <Zap className="mr-2 h-4 w-4" /> Modo Vendedor (Mis Tiendas)
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-
-            </div>
-
-            {/* FOOTER */}
-            <div className="p-6 border-t border-[#222]">
-                <div className="space-y-1">
-                    <NavItem href="/dashboard/admin/architecture" icon={<Activity className="w-4 h-4 text-green-500" />} label="System Health" active={isActive('/dashboard/admin/architecture')} />
                     <LogoutButton />
+                </div>
+
+                {/* Master Pulse Monitor */}
+                <div className="p-3 rounded-xl bg-black/60 border border-[#ff007f]/20">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                            <div className="h-1.5 w-1.5 rounded-full bg-[#ff007f] animate-pulse" />
+                            <span className="text-[9px] font-black text-[#ff007f] uppercase tracking-widest">Master Pulse</span>
+                        </div>
+                        <span className="text-[8px] font-bold text-emerald-500 uppercase">Live</span>
+                    </div>
+                    <div className="space-y-1.5">
+                        <div className="flex justify-between items-center text-[7px] font-bold text-zinc-500 uppercase">
+                            <span>API Cluster</span>
+                            <span className="text-white">Active</span>
+                        </div>
+                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#ff007f] w-[88%] shadow-[0_0_5px_#ff007f]" />
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -122,34 +172,51 @@ export function AdminSidebar() {
     )
 }
 
-function NavItem({ href, icon, label, active, count }: { href: string, icon: React.ReactNode, label: string, active: boolean, count?: number }) {
+function SidebarGroup({ group, pathname }: { group: any, pathname: string }) {
+    const isAnyActive = group.items.some((item: any) => pathname === item.href)
+    const [isOpen, setIsOpen] = React.useState(isAnyActive)
+
+    React.useEffect(() => {
+        if (isAnyActive) setIsOpen(true)
+    }, [isAnyActive])
+
     return (
-        <Link
-            href={href}
-            className={cn(
-                "flex items-center justify-between px-3 py-2 rounded-lg transition-all group",
-                active ? "bg-[#111] text-white" : "text-zinc-500 hover:text-white hover:bg-[#111]"
+        <div className="space-y-1">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className={cn(
+                    "w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all group",
+                    isOpen ? "text-white" : "text-zinc-500 hover:text-white"
+                )}
+            >
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">{group.label}</span>
+                {isOpen ? <ChevronDown className="w-3 h-3 text-zinc-600" /> : <ChevronRight className="w-3 h-3 text-zinc-600" />}
+            </button>
+
+            {isOpen && (
+                <div className="space-y-1 pb-2">
+                    {group.items.map((item: any) => {
+                        const active = pathname === item.href
+                        const Icon = item.icon
+                        return (
+                            <LinkNext
+                                key={item.label}
+                                href={item.href}
+                                className={cn(
+                                    "flex items-center gap-3 px-6 py-2 rounded-lg transition-all group",
+                                    active ? "bg-[#111] text-white" : "text-zinc-500 hover:text-white hover:bg-white/5"
+                                )}
+                            >
+                                <Icon className={cn("w-4 h-4 transition-colors", active ? "text-[#ff007f]" : "group-hover:text-[#ff007f]")} />
+                                <span className="text-[11px] font-bold uppercase tracking-wider">{item.label}</span>
+                            </LinkNext>
+                        )
+                    })}
+                </div>
             )}
-        >
-            <div className="flex items-center gap-3">
-                <span className={cn("transition-colors", active ? "text-[#ff007f]" : "group-hover:text-white")}>
-                    {icon}
-                </span>
-                <span className="text-xs font-bold tracking-wide">{label}</span>
-            </div>
-            {count !== undefined && (
-                <span className="bg-[#ff007f] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
-                    {count}
-                </span>
-            )}
-        </Link>
+        </div>
     )
 }
-
-// Separate component for client-side logic to keep sidebar mostly clean if needed, 
-// though regular button works fine here since we are 'use client'
-import { createClient } from '@/utils/supabase/client'
-import { useRouter } from 'next/navigation'
 
 function LogoutButton() {
     const router = useRouter()
@@ -161,10 +228,10 @@ function LogoutButton() {
                 await supabase.auth.signOut()
                 router.push('/login')
             }}
-            className="w-full h-10 flex items-center px-3 rounded-lg text-xs font-bold text-zinc-500 hover:text-white hover:bg-white/5 transition-all group"
+            className="p-2 rounded-lg text-zinc-500 hover:text-white hover:bg-white/5 transition-all"
+            title="Logout"
         >
-            <LogOut className="w-4 h-4 mr-3 group-hover:text-red-500 transition-colors" />
-            Logout
+            <LogOut className="w-4 h-4" />
         </button>
     )
 }
@@ -175,19 +242,16 @@ function StoreSwitcher() {
     return (
         <div className="space-y-2">
             <select
-                className="w-full bg-[#111] border border-[#222] rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-[#ff007f] transition-all appearance-none cursor-pointer hover:bg-[#1a1a1a]"
+                className="w-full bg-[#111] border border-[#222] rounded-xl px-3 py-2 text-[10px] font-bold text-white focus:outline-none focus:border-[#ff007f] transition-all appearance-none cursor-pointer hover:bg-[#1a1a1a] uppercase tracking-widest"
                 onChange={(e) => {
                     if (e.target.value) router.push(`/dashboard/vendor?store=${e.target.value}`)
                 }}
                 defaultValue=""
             >
-                <option value="" disabled>Select Active Store...</option>
+                <option value="" disabled>Active Store...</option>
                 <option value="the-lounge">The Lounge</option>
                 <option value="the-red-room">The Red Room</option>
             </select>
-            <Button variant="ghost" size="sm" className="w-full text-[10px] text-zinc-500 hover:text-[#ff007f] hover:bg-[#ff007f]/10 h-6 border border-dashed border-zinc-800">
-                <Plus className="w-3 h-3 mr-1" /> Add New Store
-            </Button>
         </div>
     )
 }

@@ -20,6 +20,7 @@ export interface ProductBase {
     store_type: StoreType;
     category_id: string;
     slug: string;
+    stock?: number;
 }
 
 export interface SexShopDetails {
@@ -55,4 +56,24 @@ export interface Order {
     items: any; // JSONB
     total_amount: number;
     status: 'pending' | 'paid' | 'shipped' | 'cancelled';
+}
+
+export interface Store {
+    id: string
+    owner_id: string
+    name: string
+    slug: string
+    logo_url?: string | null
+    description?: string | null
+    address?: string | null
+    city?: string | null
+    state?: string | null
+    zip?: string | null
+    instagram_url?: string | null
+    facebook_url?: string | null
+    whatsapp_number?: string | null
+    theme_color?: string | null
+    config?: any
+    store_type?: string | null
+    products?: Product[]
 }

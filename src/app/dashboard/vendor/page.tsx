@@ -15,16 +15,22 @@ import {
     Truck,
     ArrowRight,
     Zap,
-    MessageSquare
+    MessageSquare,
+    Download,
+    Plus
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useVendor } from '@/providers/vendor-provider'
+import Link from 'next/link'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
+
+import { AreaChart, Area, ResponsiveContainer, Tooltip } from 'recharts'
 
 function VendorDashboardContent() {
     const supabase = createClient()
@@ -44,6 +50,7 @@ function VendorDashboardContent() {
 
     const [realActivity, setRealActivity] = useState<any[]>([])
     const [realInventory, setRealInventory] = useState<any[]>([])
+    const [chartData, setChartData] = useState<any[]>([])
 
     useEffect(() => {
         if (!activeStore) return
@@ -64,7 +71,7 @@ function VendorDashboardContent() {
                 // 2. Fetch Active Shipments & Total Sales for this store
                 const { data: storeOrders } = await supabase
                     .from('orders')
-                    .select('total_amount, status')
+                    .select('total_amount, status, created_at')
                     .eq('store_id', activeStore.id)
 
                 const totalBalance = (storeOrders || [])
@@ -85,7 +92,7 @@ function VendorDashboardContent() {
                     .limit(5)
 
                 if (lowStockProducts) {
-                    setRealInventory(lowStockProducts.map(p => ({
+                    setRealInventory(lowStockProducts.map((p: any) => ({
                         name: p.name,
                         sku: p.sku || 'NO-SKU',
                         stock: p.stock,
@@ -103,7 +110,7 @@ function VendorDashboardContent() {
                     .limit(4)
 
                 if (recentOrders) {
-                    setRealActivity(recentOrders.map(o => ({
+                    setRealActivity(recentOrders.map((o: any) => ({
                         type: 'order',
                         user: (o.profiles as any)?.full_name || 'Nuevo Cliente',
                         text: `placed Order #${o.id.slice(0, 8).toUpperCase()}`,
@@ -142,8 +149,29 @@ function VendorDashboardContent() {
                     inquiriesCount: processedInquiries.length
                 })
                 setRecentInquiries(processedInquiries)
+
+                // 7. Process Chart Data
+                const chartDataMap = (storeOrders || []).reduce((acc: any, order: any) => {
+                    const date = order.created_at.split('T')[0]
+                    acc[date] = (acc[date] || 0) + Number(order.total_amount)
+                    return acc
+                }, {})
+
+
+
+                const finalChartData = Array.from({ length: 7 }, (_, i) => {
+                    const d = new Date()
+                    d.setDate(d.getDate() - (6 - i))
+                    const dateKey = d.toISOString().split('T')[0]
+                    return {
+                        name: d.toLocaleDateString('en-US', { weekday: 'short' }),
+                        amount: chartDataMap[dateKey] || 0
+                    }
+                })
+                setChartData(finalChartData)
+
             } catch (error) {
-                console.error('Error fetching stats:', error)
+                console.error('Dashboard Error:', error)
             } finally {
                 setLoading(false)
             }
@@ -152,271 +180,323 @@ function VendorDashboardContent() {
         fetchStatsAndProfiles()
     }, [activeStore])
 
+
+    // ------------------------------------------------------------------
+    // RENDER: Loading / Empty / Data
+    // ------------------------------------------------------------------
+
     if (isVendorLoading || loading) {
-        return <div className="min-h-screen bg-[#09090b] flex items-center justify-center text-cyan-500">Loading Command Center...</div>
+        return <div className="p-10 text-zinc-500 animate-pulse">Loading dashboard...</div>
     }
 
     if (!activeStore) {
-        return <div className="text-white p-10">Please select a store.</div>
+        return <div className="p-10 text-zinc-500">No store selected.</div>
     }
 
     return (
-        <div className="min-h-screen bg-[#09090b] text-white p-8 font-sans">
+        <div className="flex-1 h-full overflow-y-auto bg-black p-4 md:p-8 font-sans">
+            <div className="max-w-7xl mx-auto space-y-8">
 
-            {/* Top Bar */}
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="h-2 w-2 bg-cyan-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-500">System Operational</span>
-                    </div>
-                    <h1 className="text-3xl font-bold tracking-tight">Merchant Hub</h1>
-                    <p className="text-zinc-500 text-sm mt-1">Real-time performance and luxury logistics monitoring.</p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10 backdrop-blur-md">
-                        <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center border border-white/5 overflow-hidden">
-                            {userProfile?.avatar_url ? (
-                                <img src={userProfile.avatar_url} className="h-full w-full object-cover" />
-                            ) : (
-                                <span className="font-serif italic text-xs uppercase">{userProfile?.full_name?.substring(0, 2) || 'AM'}</span>
-                            )}
-                        </div>
-                        <div className="text-right">
-                            <div className="text-xs font-bold text-white tracking-tight">{userProfile?.full_name || 'Vendor Admin'}</div>
-                            <div className="text-[8px] text-zinc-500 uppercase tracking-[0.2em] font-black">{activeStore?.name}</div>
+                {/* Header Section */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-white/10 pb-6">
+                    <div>
+                        <h1 className="text-3xl font-serif font-bold text-white tracking-tight">
+                            Dashboard
+                        </h1>
+                        <div className="text-zinc-400 mt-1 flex items-center gap-2">
+                            Overview for <span className="text-[#f4256a] font-bold">{activeStore.name}</span>
+                            <Badge variant="outline" className="border-[#f4256a]/30 text-[#f4256a] bg-[#f4256a]/5 text-[10px] uppercase tracking-widest">{activeStore.status}</Badge>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-                {/* LEFT COLUMN (2/3 width) */}
-                <div className="lg:col-span-2 space-y-8">
-
-                    {/* 1. Stat Cards Row */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Sales */}
-                        <Card className="bg-[#121217] border-zinc-800 relative overflow-hidden">
-                            <CardContent className="p-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Total Sales (Stripe)</div>
-                                    <div className="p-1.5 bg-cyan-500/10 rounded text-cyan-500">
-                                        <DollarSign className="h-4 w-4" />
-                                    </div>
-                                </div>
-                                <div className="text-3xl font-bold font-mono text-white mb-2">
-                                    ${stats.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </div>
-                                <div className="text-xs font-medium text-green-500 flex items-center gap-1">
-                                    <TrendingUp className="h-3 w-3" /> Real-time <span className="text-zinc-600">from orders</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Shipments */}
-                        <Card className="bg-[#121217] border-zinc-800 relative overflow-hidden">
-                            <CardContent className="p-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Active Shipments</div>
-                                    <div className="p-1.5 bg-blue-500/10 rounded text-blue-500">
-                                        <Package className="h-4 w-4" />
-                                    </div>
-                                </div>
-                                <div className="text-3xl font-bold font-mono text-white mb-2">{stats.inTransit}</div>
-                                <div className="text-xs font-medium text-blue-500 flex items-center gap-1">
-                                    <Truck className="h-3 w-3" /> {stats.pending} <span className="text-zinc-600">pending processing</span>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Inquiries */}
-                        <Card className="bg-[#121217] border-zinc-800 relative overflow-hidden border-l-2 border-l-cyan-500">
-                            <CardContent className="p-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Nuevas Consultas</div>
-                                    <div className="p-1.5 bg-cyan-500/10 rounded text-cyan-500">
-                                        <MessageSquare className="h-4 w-4" />
-                                    </div>
-                                </div>
-                                <div className="text-3xl font-bold font-mono text-white mb-2">{stats.inquiriesCount}</div>
-                                <div className="text-xs font-bold text-cyan-500">Chat CRM Activo</div>
-                            </CardContent>
-                        </Card>
+                    <div className="flex gap-3">
+                        <Button variant="outline" className="border-white/10 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-300">
+                            <Download className="mr-2 h-4 w-4" /> Reports
+                        </Button>
+                        <Button className="bg-[#f4256a] hover:bg-[#f4256a]/90 text-white font-bold tracking-wide shadow-[0_0_20px_rgba(244,37,106,0.5)] border border-[#f4256a]/20">
+                            <Plus className="mr-2 h-4 w-4" /> Create Product
+                        </Button>
                     </div>
+                </div>
 
-                    {/* 2. Revenue Trends - THE GRAPH */}
-                    <Card className="bg-[#121217] border-zinc-800 h-[320px]">
-                        <CardHeader className="flex flex-row items-center justify-between pb-0">
-                            <div>
-                                <CardTitle className="text-lg font-bold text-white">Revenue Trends</CardTitle>
-                                <p className="text-xs text-zinc-500 mt-1">Daily performance across all boutique channels</p>
-                            </div>
-                            <div className="flex gap-2">
-                                <Badge variant="secondary" className="bg-cyan-950/50 text-cyan-500 border border-cyan-900/50 hover:bg-cyan-900/50">7D</Badge>
-                                <Badge variant="outline" className="text-zinc-500 border-zinc-800 hover:text-white">1M</Badge>
-                                <Badge variant="outline" className="text-zinc-500 border-zinc-800 hover:text-white">1Y</Badge>
-                            </div>
+                {/* KPI Grid - Neon Style */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Total Revenue */}
+                    <Card className="bg-zinc-900/40 border-white/5 backdrop-blur-sm hover:border-[#f4256a]/30 transition-all group">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Total Revenue</CardTitle>
                         </CardHeader>
-                        <CardContent className="pt-8 h-full relative p-0 overflow-hidden">
-                            {/* Custom SVG Curve for "Blue Wave" - Fixed Responsiveness */}
-                            <div className="absolute inset-0 w-full h-full">
-                                <svg
-                                    className="w-full h-full"
-                                    viewBox="0 0 1000 200"
-                                    preserveAspectRatio="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <defs>
-                                        <linearGradient id="gradient-blue" x1="0%" y1="0%" x2="0%" y2="100%">
-                                            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.2" />
-                                            <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
-                                        </linearGradient>
-                                    </defs>
-                                    {/* The Area Fill */}
-                                    <path d="M0,150 C150,150 200,80 350,80 C500,80 550,40 1000,40 L1000,200 L0,200 Z" fill="url(#gradient-blue)" />
-                                    {/* The Line */}
-                                    <path d="M0,150 C150,150 200,80 350,80 C500,80 550,40 1000,40" stroke="#06b6d4" strokeWidth="4" fill="none" vectorEffect="non-scaling-stroke" />
-                                    {/* Data Point */}
-                                    <circle cx="650" cy="50" r="6" fill="#121217" stroke="#06b6d4" strokeWidth="3" />
-                                </svg>
+                        <CardContent>
+                            <div className="flex items-center justify-between">
+                                <span className="text-3xl font-mono font-bold text-white group-hover:text-[#f4256a] transition-colors">
+                                    ${stats.balance.toLocaleString()}
+                                </span>
+                                <div className="h-8 w-8 rounded-full bg-[#f4256a]/10 flex items-center justify-center border border-[#f4256a]/20">
+                                    <DollarSign className="h-4 w-4 text-[#f4256a]" />
+                                </div>
                             </div>
-
-                            {/* Axis Labels - Positioned Absolutely at bottom */}
-                            <div className="absolute bottom-4 left-0 right-0 flex justify-between text-[10px] text-zinc-600 font-bold uppercase tracking-widest px-6">
-                                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                            <div className="mt-2 text-xs text-emerald-500 font-bold flex items-center gap-1">
+                                <TrendingUp className="h-3 w-3" /> +12.5% <span className="text-zinc-600 font-normal">vs last month</span>
                             </div>
                         </CardContent>
                     </Card>
 
-                    {/* 3. Inventory Health */}
-                    <div className="bg-[#121217] border border-zinc-800 rounded-xl p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-bold text-white">Inventory Health</h3>
-                        </div>
-                        <div className="space-y-4">
-                            {realInventory.length === 0 ? (
-                                <div className="text-zinc-600 text-xs py-4 text-center">Todo el inventario està saludable.</div>
-                            ) : (
-                                realInventory.map((item, i) => (
-                                    <div key={i} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg transition-colors group cursor-pointer border border-transparent hover:border-zinc-800">
-                                        <div className="flex items-center gap-4">
-                                            <img src={item.image} className="h-10 w-10 rounded object-cover bg-zinc-800" />
+                    {/* Active Shipments */}
+                    <Card className="bg-zinc-900/40 border-white/5 backdrop-blur-sm hover:border-[#f4256a]/30 transition-all group">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-zinc-400 text-xs font-bold uppercase tracking-widest">In Transit</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-between">
+                                <span className="text-3xl font-mono font-bold text-white group-hover:text-[#f4256a] transition-colors">
+                                    {stats.inTransit}
+                                </span>
+                                <div className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                                    <Truck className="h-4 w-4 text-blue-500" />
+                                </div>
+                            </div>
+                            <div className="mt-2 text-xs text-zinc-500 flex items-center gap-1">
+                                {stats.pending} pending processing
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Store Visitors (Mock) */}
+                    <Card className="bg-zinc-900/40 border-white/5 backdrop-blur-sm hover:border-[#f4256a]/30 transition-all group">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Store Visitors</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-between">
+                                <span className="text-3xl font-mono font-bold text-white group-hover:text-[#f4256a] transition-colors">
+                                    8.2k
+                                </span>
+                                <div className="h-8 w-8 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                                    <Eye className="h-4 w-4 text-purple-500" />
+                                </div>
+                            </div>
+                            <div className="mt-2 text-xs text-emerald-500 font-bold flex items-center gap-1">
+                                <Zap className="h-3 w-3" /> High Traffic
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* New Messages */}
+                    <Card className="bg-zinc-900/40 border-white/5 backdrop-blur-sm hover:border-[#f4256a]/30 transition-all group">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-zinc-400 text-xs font-bold uppercase tracking-widest">Inquiries</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-between">
+                                <span className="text-3xl font-mono font-bold text-white group-hover:text-[#f4256a] transition-colors">
+                                    {stats.inquiriesCount}
+                                </span>
+                                <div className="h-8 w-8 rounded-full bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20">
+                                    <MessageSquare className="h-4 w-4 text-yellow-500" />
+                                </div>
+                            </div>
+                            <div className="mt-2 text-xs text-zinc-500 flex items-center gap-1">
+                                Response time: &lt; 5m
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+
+                {/* Main Content Split */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                    {/* Visual Analytics - Graph */}
+                    <div className="lg:col-span-2 space-y-8">
+                        <Card className="bg-zinc-900/40 border-white/5 overflow-hidden">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg font-bold text-white">Revenue Performance</CardTitle>
+                                    <p className="text-zinc-500 text-xs uppercase tracking-wider mt-1">Last 30 Days</p>
+                                </div>
+                                <Tabs defaultValue="revenue">
+                                    <TabsList className="bg-black border border-white/10 h-8">
+                                        <TabsTrigger value="revenue" className="text-xs h-6 data-[state=active]:bg-[#f4256a] data-[state=active]:text-white">Revenue</TabsTrigger>
+                                        <TabsTrigger value="orders" className="text-xs h-6 data-[state=active]:bg-[#f4256a] data-[state=active]:text-white">Orders</TabsTrigger>
+                                    </TabsList>
+                                </Tabs>
+                            </CardHeader>
+                            <CardContent className="h-[300px] w-full p-0">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={chartData.length > 0 ? chartData : [{ date: 'No Data', amount: 0 }]}>
+                                        <defs>
+                                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#f4256a" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#f4256a" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <Tooltip
+                                            contentStyle={{ backgroundColor: '#000', border: '1px solid #333', borderRadius: '8px' }}
+                                            itemStyle={{ color: '#fff' }}
+                                        />
+                                        <Area
+                                            type="monotone"
+                                            dataKey="amount"
+                                            stroke="#f4256a"
+                                            strokeWidth={3}
+                                            fillOpacity={1}
+                                            fill="url(#colorRevenue)"
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
+
+                        {/* Inventory Warning */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Card className="bg-zinc-900/40 border-white/5">
+                                <CardHeader>
+                                    <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
+                                        <AlertTriangle className="h-4 w-4 text-orange-500" /> Low Stock Alert
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {realInventory.length === 0 ? (
+                                        <div className="text-zinc-500 text-sm italic">All stock levels good.</div>
+                                    ) : (
+                                        realInventory.map((item, i) => (
+                                            <div key={i} className="flex items-center gap-3">
+                                                <div className="h-10 w-10 bg-zinc-800 rounded-md bg-cover bg-center border border-white/5"
+                                                    style={{ backgroundImage: `url(${item.image})` }}></div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-bold text-white">{item.name}</div>
+                                                    <div className="text-xs text-zinc-500">SKU: {item.sku}</div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-sm font-bold text-orange-500">{item.stock} left</div>
+                                                    <Button variant="link" className="h-auto p-0 text-[10px] text-zinc-400 hover:text-white">Restock</Button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </CardContent>
+                            </Card>
+
+                            {/* Global Activity Feed */}
+                            <Card className="bg-zinc-900/40 border-white/5">
+                                <CardHeader>
+                                    <CardTitle className="text-sm font-bold text-white flex items-center gap-2">
+                                        <Zap className="h-4 w-4 text-yellow-500" /> Live Feed
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    {realActivity.map((act, i) => (
+                                        <div key={i} className="flex gap-3 relative">
+                                            {i !== realActivity.length - 1 && (
+                                                <div className="absolute left-[15px] top-8 bottom-[-24px] w-px bg-zinc-800"></div>
+                                            )}
+                                            <div className="h-8 w-8 rounded-full border border-white/10 bg-cover bg-center shrink-0 z-10"
+                                                style={{ backgroundImage: `url(${act.avatar || 'https://github.com/shadcn.png'})` }}></div>
                                             <div>
-                                                <div className="text-sm font-bold text-white">{item.name}</div>
-                                                <div className="text-[10px] text-zinc-500 font-mono">{item.sku}</div>
+                                                <p className="text-xs text-zinc-300">
+                                                    <span className="font-bold text-white">{act.user}</span> {act.action}
+                                                </p>
+                                                <p className="text-[10px] text-zinc-500 mt-1">{act.time}</p>
+                                            </div>
+                                            {act.amount && (
+                                                <div className="ml-auto text-xs font-mono font-bold text-emerald-500">{act.amount}</div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+
+                    {/* Sidebar / Quick Actions */}
+                    <div className="space-y-6">
+                        {/* Welcome Card */}
+                        <div className="bg-linear-to-br from-[#f4256a] to-[#ff007f] rounded-xl p-6 relative overflow-hidden text-white shadow-lg">
+                            <div className="relative z-10">
+                                <h2 className="text-2xl font-serif font-black italic mb-2">Welcome Back, {userProfile?.full_name?.split(' ')[0] || 'Boss'}</h2>
+                                <p className="text-white/80 text-sm mb-6 max-w-[80%]">
+                                    Your store is currently visible to 12.4k active shoppers in your region.
+                                </p>
+                                <Button className="bg-white text-[#f4256a] hover:bg-zinc-100 font-bold border-0">
+                                    Promote Store <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            </div>
+                            {/* Decorative Circles */}
+                            <div className="absolute -right-10 -bottom-10 h-40 w-40 bg-white/20 rounded-full blur-2xl"></div>
+                            <div className="absolute top-0 right-0 h-20 w-20 bg-purple-500/30 rounded-full blur-xl"></div>
+                        </div>
+
+                        {/* Quick Links */}
+                        <Card className="bg-zinc-900/40 border-white/5">
+                            <CardHeader>
+                                <CardTitle className="text-sm font-bold text-white">Quick Actions</CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid grid-cols-2 gap-3">
+                                <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 border-zinc-800 bg-black hover:bg-zinc-800 text-zinc-400 hover:text-white group transition-all">
+                                    <Package className="h-5 w-5 group-hover:text-[#f4256a] transition-colors" />
+                                    <span className="text-xs">Orders</span>
+                                </Button>
+                                <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 border-zinc-800 bg-black hover:bg-zinc-800 text-zinc-400 hover:text-white group transition-all">
+                                    <MessageSquare className="h-5 w-5 group-hover:text-[#f4256a] transition-colors" />
+                                    <span className="text-xs">Chat Support</span>
+                                </Button>
+                                <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 border-zinc-800 bg-black hover:bg-zinc-800 text-zinc-400 hover:text-white group transition-all">
+                                    <AlertTriangle className="h-5 w-5 group-hover:text-orange-500 transition-colors" />
+                                    <span className="text-xs">Disputes</span>
+                                </Button>
+                                <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 border-zinc-800 bg-black hover:bg-zinc-800 text-zinc-400 hover:text-white group transition-all">
+                                    <MoreHorizontal className="h-5 w-5" />
+                                    <span className="text-xs">Settings</span>
+                                </Button>
+                            </CardContent>
+                        </Card>
+
+                        {/* Recent Inquiries List */}
+                        <Card className="bg-zinc-900/40 border-white/5 h-full">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle className="text-sm font-bold text-white">Recent Inquiries</CardTitle>
+                                <Link href="/dashboard/chat" className="text-[10px] text-[#f4256a] hover:underline uppercase font-bold tracking-wider">
+                                    View All
+                                </Link>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {recentInquiries.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <MessageSquare className="h-8 w-8 text-zinc-700 mx-auto mb-2" />
+                                        <p className="text-zinc-500 text-xs">No active chats.</p>
+                                    </div>
+                                ) : (
+                                    recentInquiries.map((chat) => (
+                                        <div key={chat.id} className="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer" onClick={() => router.push('/dashboard/chat')}>
+                                            <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center font-bold text-zinc-500 text-xs border border-white/5">
+                                                {chat.id.slice(0, 2).toUpperCase()}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex justify-between items-start">
+                                                    <h4 className="text-xs font-bold text-white truncate w-24">User {chat.user_id?.slice(0, 4)}</h4>
+                                                    <span className="text-[10px] text-zinc-500 whitespace-nowrap">
+                                                        {new Date(chat.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </span>
+                                                </div>
+                                                <p className="text-[11px] text-zinc-400 truncate">
+                                                    Latest message preview...
+                                                </p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <div className="text-sm font-bold text-cyan-500">{item.stock} Items Left</div>
-                                            <div className="text-[10px] text-zinc-500 uppercase tracking-wider">{item.status}</div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
+                                    ))
+                                )}
+                            </CardContent>
+                        </Card>
                     </div>
-
                 </div>
-
-                {/* RIGHT COLUMN (1/3 width) - Activity & Leads */}
-                <div className="space-y-6">
-                    {/* Recent Leads / Inquiries */}
-                    <div className="flex items-center gap-3">
-                        <h3 className="text-lg font-bold text-white tracking-tight">Active Inquiries</h3>
-                        {stats.inquiriesCount > 0 && <Badge className="bg-cyan-500 text-black font-bold h-5 px-1.5">{stats.inquiriesCount}</Badge>}
-                    </div>
-
-                    <div className="space-y-3">
-                        {recentInquiries.length === 0 ? (
-                            <div className="p-4 rounded-xl border border-dashed border-zinc-800 text-center text-zinc-600 text-[10px] uppercase tracking-widest">
-                                Sin nuevas consultas
-                            </div>
-                        ) : (
-                            recentInquiries.map((inq, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => router.push(`/dashboard/chat?id=${inq.id}`)}
-                                    className="w-full bg-[#121217] border border-zinc-800/80 p-3 rounded-xl hover:bg-white/5 transition-all group text-left"
-                                >
-                                    <div className="flex justify-between items-start mb-1">
-                                        <span className="text-[10px] font-bold text-cyan-500 tracking-widest uppercase">{inq.title || 'Consulta de Producto'}</span>
-                                        <span className="text-[9px] text-zinc-600">{new Date(inq.updated_at).toLocaleDateString()}</span>
-                                    </div>
-                                    <div className="text-sm font-bold text-white group-hover:text-cyan-400 transition-colors">
-                                        {inq.buyer?.full_name || 'Solicitud de Cliente'}
-                                    </div>
-                                    <div className="text-xs text-zinc-500 mt-1 line-clamp-1">{inq.last_message_preview || 'Abriendo canal de comunicación...'}</div>
-                                </button>
-                            ))
-                        )}
-                        <Button
-                            variant="link"
-                            onClick={() => router.push('/dashboard/chat')}
-                            className="text-zinc-500 hover:text-cyan-500 text-[10px] uppercase tracking-widest font-bold p-0 h-auto"
-                        >
-                            Ver Centro de Mensajes <ArrowRight className="h-3 w-3 ml-1" />
-                        </Button>
-                    </div>
-
-                    <div className="pt-4 flex items-center gap-3">
-                        <h3 className="text-lg font-bold text-white">Global Activity</h3>
-                        <div className="h-2 w-2 rounded-full bg-cyan-500 animate-pulse" />
-                    </div>
-
-                    <div className="relative border-l border-zinc-800 ml-3 space-y-8 py-2">
-                        {realActivity.length === 0 ? (
-                            <div className="text-zinc-600 text-[10px] uppercase tracking-widest pl-8">Sin actividad reciente</div>
-                        ) : (
-                            realActivity.map((event, i) => (
-                                <div key={i} className="relative pl-8">
-                                    {/* Icon Bubble */}
-                                    <div className={`absolute -left-4 top-0 h-8 w-8 rounded-full border-4 border-[#09090b] flex items-center justify-center bg-[#1a1a20]`}>
-                                        {event.type === 'like' && <Heart className="h-3 w-3 text-cyan-500 fill-cyan-500" />}
-                                        {event.type === 'order' && <ShoppingCart className="h-3 w-3 text-green-500" />}
-                                        {event.type === 'view' && <Eye className="h-3 w-3 text-cyan-500" />}
-                                        {event.type === 'ship' && <Truck className="h-3 w-3 text-blue-500" />}
-                                    </div>
-
-                                    {/* Content */}
-                                    <div>
-                                        <div className="text-sm text-zinc-300">
-                                            {event.user && <span className="font-bold text-white">{event.user} </span>}
-                                            {event.count && <span className="font-bold text-cyan-500">{event.count} Users </span>}
-                                            <span className="text-zinc-400">{event.text} </span>
-                                            <span className="font-bold text-white">{event.item}</span>
-                                        </div>
-                                        <div className="text-[10px] font-bold text-zinc-600 mt-1 uppercase tracking-wider flex items-center gap-2">
-                                            {event.time}
-                                            {event.location && <span>• {event.location}</span>}
-                                            {event.isLive && <span className="text-cyan-500">• LIVE STREAM</span>}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-
-                    <Button variant="outline" className="w-full border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-800 mt-4 text-xs font-bold uppercase tracking-widest py-6">
-                        View Full History
-                    </Button>
-                </div>
-
             </div>
-
-            {/* Bottom Floating Action, maybe? No, let's keep it clean as per screenshot */}
         </div>
     )
 }
-
-import { AIAssistant } from '@/components/ai/ai-assistant'
 
 export default function VendorDashboard() {
     return (
         <Suspense fallback={<div className="min-h-screen bg-[#09090b] flex items-center justify-center text-cyan-500">Loading Vendor Interface...</div>}>
             <VendorDashboardContent />
-            <AIAssistant />
         </Suspense>
     )
 }

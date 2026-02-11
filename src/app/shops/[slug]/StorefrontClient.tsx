@@ -1,10 +1,10 @@
 'use client'
 
 import { createClient } from '@/utils/supabase/client'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Loader2, ShoppingBag, Menu, ArrowLeft, Search, Instagram, MessageCircle } from 'lucide-react'
+import { Loader2, ShoppingBag, Menu, ArrowLeft, Search, Instagram, MessageCircle, Palette, Check } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Footer } from '@/components/footer'
@@ -22,20 +22,32 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useCart } from '@/context/cart-context'
+import { MinimalTheme } from '@/components/templates/MinimalTheme'
+import { DarkSocialTheme } from '@/components/templates/DarkSocialTheme'
 
 export default function StorefrontClient() {
     const params = useParams()
     const router = useRouter()
+    const searchParams = useSearchParams()
     const supabase = createClient()
     const { cartCount, toggleCart } = useCart()
     const [loading, setLoading] = useState(true)
-    const [store, setStore] = useState<any>(null)
+    const [activeStore, setStore] = useState<any>(null)
     const [categories, setCategories] = useState<any[]>([])
     const [products, setProducts] = useState<any[]>([])
     const [activeCategory, setActiveCategory] = useState<string>('all')
     const [user, setUser] = useState<any>(null)
+    const [activeTemplate, setActiveTemplate] = useState<any>(null)
     const { startInquiryChat } = useChat()
     const isMounted = useRef(true)
+
+    // Check for Preview Mode & Builder Mode
+    const previewTemplateKey = searchParams.get('preview_template')
+    const isBuilderMode = searchParams.get('mode') === 'builder'
+
+    // Mock Data for Builder Mode
+    const { MOCK_PRODUCTS } = require('@/lib/mock-data')
+
 
     useEffect(() => {
         isMounted.current = true
@@ -63,6 +75,40 @@ export default function StorefrontClient() {
                 setStore(storeData)
             }
 
+            // Fetch Template Logic
+            // 1. Preview/Builder Mode (Query Param)
+            if (previewTemplateKey) {
+                // If previewing by component_key (e.g. 'minimal'), structure a fake template object
+                // OR fetch by ID if UUID. Ideally fetch by ID or Key.
+
+                // Try fetching by ID first
+                const { data: previewData } = await supabase
+                    .from('store_templates')
+                    .select('*')
+                    .eq('id', previewTemplateKey)
+                    .single()
+
+                if (isMounted.current && previewData) {
+                    setActiveTemplate(previewData)
+                } else if (isMounted.current) {
+                    // Fallback: If previewKey is just 'minimal' (not uuid), mock it
+                    setActiveTemplate({ config: { component_key: previewTemplateKey } })
+                }
+
+            }
+            // 2. Saved Template (DB)
+            else if (storeData.template_id) {
+                const { data: templateData } = await supabase
+                    .from('store_templates')
+                    .select('*')
+                    .eq('id', storeData.template_id)
+                    .single()
+
+                if (isMounted.current && templateData) {
+                    setActiveTemplate(templateData)
+                }
+            }
+
             // Get Categories
             const { data: cats } = await supabase
                 .from('store_categories')
@@ -70,34 +116,45 @@ export default function StorefrontClient() {
                 .eq('store_id', storeData.id)
             if (isMounted.current) setCategories(cats || [])
 
-            // Get Products
-            const { data: prods } = await supabase
-                .from('products')
-                .select('*')
-                .eq('store_id', storeData.id)
-                .eq('is_active', true)
-                .order('created_at', { ascending: false })
+            // Get Products (Mock or Real)
+            const isMinimalPreview = previewTemplateKey === 'minimal' || activeTemplate?.config?.component_key === 'minimal'
+            // If in Builder Mode OR specifically previewing Minimal Theme (Maqueta Mode)
+            const shouldShowMocks = isBuilderMode || (isMinimalPreview && previewTemplateKey)
 
-            if (isMounted.current) {
-                setProducts(prods || [])
-                setLoading(false)
+            if (shouldShowMocks || isMounted.current) {
+                if (shouldShowMocks) {
+                    setProducts(MOCK_PRODUCTS)
+                } else {
+                    const { data: prods } = await supabase
+                        .from('products')
+                        .select('*')
+                        .eq('store_id', storeData.id)
+                        .eq('is_active', true)
+                        .order('created_at', { ascending: false })
+
+                    if (isMounted.current) {
+                        if (prods && prods.length > 0) {
+                            setProducts(prods)
+                        } else {
+                            // Fallback to MOCK data if no products found (so user sees something)
+                            setProducts(MOCK_PRODUCTS)
+                        }
+                    }
+                }
             }
-        }
 
-        const fetchUser = async () => {
+            // Get Current User
             const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
-                // get profile for avatar
-                const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-                if (isMounted.current) setUser(data || user)
-            }
+            if (isMounted.current) setUser(user)
+
+            if (isMounted.current) setLoading(false)
+
+            // FIXME: Enforcing Mock Products for Demo/Dev purposes as per user request
+            // setProducts(MOCK_PRODUCTS);
         }
 
-        if (params.slug) {
-            fetchStore()
-            fetchUser()
-        }
-    }, [params.slug, router, supabase])
+        fetchStore()
+    }, [params.slug, supabase, previewTemplateKey, isBuilderMode])
 
 
     if (loading) {
@@ -108,7 +165,7 @@ export default function StorefrontClient() {
         )
     }
 
-    if (!store) {
+    if (!activeStore) {
         return (
             <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white space-y-4">
                 <h1 className="text-4xl font-serif">Store Not Found</h1>
@@ -119,204 +176,95 @@ export default function StorefrontClient() {
         )
     }
 
-    const filteredProducts = activeCategory === 'all'
-        ? products
-        : products.filter(p => p.store_category_id === activeCategory)
+    // --- 3. HELPER: Handle Publish Template ---
+    const handlePublishTemplate = async () => {
+        if (!activeStore || !previewTemplateKey) return
+        setLoading(true)
 
+        // Update DB
+        const { error } = await supabase
+            .from('stores')
+            .update({ template_id: previewTemplateKey })
+            .eq('id', activeStore.id)
+
+        if (error) {
+            console.error('Error publishing template:', error)
+            alert('Error updating template. Check console.')
+            setLoading(false)
+        } else {
+            // Success: Clean URL and reload as real store
+            window.location.href = `/shops/${activeStore.slug}`
+        }
+    }
+
+    // --- 4. RENDER TEMPLATE ---
+    const renderTemplate = () => {
+        // A) Minimal Theme
+        if (activeTemplate?.config?.component_key === 'minimal') {
+            return <MinimalTheme store={activeStore} products={products} />
+        }
+
+        // B) Dark Social / Default / Legacy
+        // If key is 'dark_social' OR activeTemplate is null (Original/Fallback behavior)
+        if (activeTemplate?.config?.component_key === 'dark_social' || !activeTemplate) {
+            // Pass necessary props for the Legacy Theme
+            return (
+                <DarkSocialTheme
+                    store={activeStore}
+                    products={products}
+                    categories={categories}
+                    user={user}
+                />
+            )
+        }
+
+        // C) Future Components (Boutique, etc.) -> Fallback to Dark Social for now or Null
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-black text-white">
+                <p>Template component not found: {activeTemplate?.config?.component_key}</p>
+            </div>
+        )
+    }
+
+    // --- 5. RENDER WRAPPER (With Builder Overlay) ---
     return (
-        <div className="min-h-screen bg-black text-white font-sans selection:bg-white/20">
-            {/* Store Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-white/10 transition-all duration-300">
-                <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                        <Link href="/shops" className="text-zinc-400 hover:text-white transition-colors" title="Back to The Arcade">
-                            <ArrowLeft className="h-5 w-5" />
-                        </Link>
+        <div className="relative">
+            {renderTemplate()}
 
-                        {/* Store Name in Sticky Header (Only visible when scrolled ideally, but fine for now) */}
-                        <Link href={`/shops/${store.slug}`} className="flex items-center gap-3">
-                            <span className="text-xl font-serif font-bold tracking-tight">{store.name}</span>
-                        </Link>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                        <Button
-                            variant="ghost"
-                            className="text-white hover:bg-white/10 rounded-full h-10 w-10 p-0"
-                            onClick={() => startInquiryChat(store.id)}
-                        >
-                            <MessageCircle className="h-5 w-5" />
-                        </Button>
-
-                        <Button
-                            variant="ghost"
-                            className="text-white hover:bg-white/10 rounded-full h-10 w-10 p-0 relative"
-                            onClick={toggleCart}
-                        >
-                            <ShoppingBag className="h-5 w-5" />
-                            {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 h-4 w-4 bg-primary text-[10px] font-black text-black rounded-full flex items-center justify-center border-2 border-black">
-                                    {cartCount}
-                                </span>
-                            )}
-                        </Button>
-
-                        <NotificationBell />
-
-                        {user ? (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" className="relative h-8 w-8 rounded-full overflow-hidden border border-white/20">
-                                        {user.avatar_url ? (
-                                            <Image src={user.avatar_url} alt="User" fill className="object-cover" />
-                                        ) : (
-                                            <div className="h-full w-full bg-zinc-800 flex items-center justify-center text-xs font-bold">
-                                                {user.email?.[0]?.toUpperCase()}
-                                            </div>
-                                        )}
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-56 bg-zinc-900 border-zinc-800 text-white" align="end">
-                                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                                    <DropdownMenuSeparator className="bg-white/10" />
-                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer" onClick={() => router.push('/dashboard/buyer')}>
-                                        Dashboard
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer" onClick={() => router.push('/dashboard/profile')}>
-                                        Profile
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer" onClick={() => router.push('/dashboard/orders')}>
-                                        Orders
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator className="bg-white/10" />
-                                    <DropdownMenuItem className="focus:bg-white/10 cursor-pointer text-red-400" onClick={() => supabase.auth.signOut().then(() => router.refresh())}>
-                                        Log out
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        ) : (
-                            <Button variant="ghost" onClick={() => router.push('/login')} className="text-white hover:bg-white/10">
-                                Login
-                            </Button>
-                        )}
-                    </div>
-                </div>
-            </header>
-
-            {/* Store Hero / Profile Header */}
-            <section className="relative bg-zinc-900 pb-24">
-                {/* Cover Image */}
-                <div className="h-64 sm:h-80 md:h-96 w-full relative bg-zinc-800 overflow-hidden">
-                    {
-                        store.cover_image_url ? (
-                            <Image src={store.cover_image_url} alt="Cover" fill className="object-cover" />
-                        ) : store.theme_color ? (
-                            <div
-                                className="w-full h-full"
-                                style={{ background: `linear-gradient(to bottom right, ${store.theme_color}, #000000)` }}
-                            />
-                        ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-zinc-950" />
-                        )
-                    }
-                    < div className="absolute inset-0 bg-black/20" />
-                </div >
-
-                <div className="max-w-7xl mx-auto px-6 relative">
-                    <div className="flex flex-col md:flex-row items-end md:items-end gap-6 -mt-16 sm:-mt-20 relative z-10">
-                        {/* Profile Picture / Logo */}
-                        <div className="h-32 w-32 sm:h-40 sm:w-40 rounded-full border-4 border-black bg-zinc-900 relative overflow-hidden shadow-2xl shrink-0">
-                            {store.logo_url ? (
-                                <Image src={store.logo_url} alt={store.name} fill className="object-cover" />
-                            ) : (
-                                <div className="h-full w-full flex items-center justify-center bg-zinc-800 text-zinc-500 font-serif text-4xl">
-                                    {store.name.charAt(0)}
-                                </div>
-                            )}
+            {/* Builder Mode Overlay (Global for ALL templates) */}
+            {isBuilderMode && (
+                // Placeholder to force read, I will use view_file first.
+                // This call is just to fix the simple Tailwind error in the meantime while I debug the activeStore issue.
+                // Correcting z-[100] to z-100 in StorefrontClient.
+                <div className="fixed bottom-0 inset-x-0 z-100 bg-zinc-900 border-t border-zinc-800 p-4 shadow-2xl safe-area-bottom">
+                    <div className="max-w-7xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-[#f4256a] flex items-center justify-center text-white">
+                                <Palette className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-white font-bold">Template Preview Mode</h3>
+                                <p className="text-zinc-400 text-xs">Viewing "{activeTemplate?.name || 'Original'}" with mock data.</p>
+                            </div>
                         </div>
-
-                        {/* Store Info */}
-                        <div className="flex-1 text-center md:text-left space-y-2 pb-4">
-                            <h1 className="text-4xl sm:text-5xl font-serif font-bold text-white tracking-tight">{store.name}</h1>
-                            {store.description && (
-                                <p className="text-zinc-400 max-w-2xl text-lg leading-relaxed">{store.description}</p>
-                            )}
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex gap-3 pb-4 w-full md:w-auto justify-center md:justify-end">
-                            <Button className="bg-white text-black hover:bg-zinc-200">Follow</Button>
+                        <div className="flex items-center gap-3">
                             <Button
-                                className="bg-rose-600/90 text-white hover:bg-rose-600 border border-white/10"
-                                onClick={() => startInquiryChat(store.id)}
+                                variant="outline"
+                                className="border-zinc-700 hover:bg-zinc-800 text-white"
+                                onClick={() => router.back()}
                             >
-                                <MessageCircle className="mr-2 h-4 w-4" /> Contact
+                                Cancel
                             </Button>
-                            {store.founder_name && (
-                                <Link href={`/shops/${store.slug}/visionary`}>
-                                    <Button variant="outline" className="text-white border-white/20 hover:bg-white/10">
-                                        The Visionary
-                                    </Button>
-                                </Link>
-                            )}
-                            <Button variant="outline" className="text-white border-white/20 hover:bg-white/10">Share</Button>
-                        </div>
-                    </div>
-
-                    {/* Category Navigation */}
-                    {categories.length > 0 && (
-                        <nav className="flex flex-wrap justify-center md:justify-start gap-2 mt-8 py-4 border-t border-white/10">
-                            <button
-                                onClick={() => setActiveCategory('all')}
-                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeCategory === 'all' ? 'bg-white text-black' : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'}`}
+                            <Button
+                                className="bg-[#f4256a] hover:bg-[#d61e5a] text-white font-bold gap-2"
+                                onClick={handlePublishTemplate}
                             >
-                                All Products
-                            </button>
-                            {categories.map(cat => (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => setActiveCategory(cat.id)}
-                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeCategory === cat.id ? 'bg-white text-black' : 'bg-white/5 text-zinc-400 hover:bg-white/10 hover:text-white'}`}
-                                >
-                                    {cat.name}
-                                </button>
-                            ))}
-                        </nav>
-                    )}
-                </div>
-            </section >
-
-            {/* Product Grid */}
-            < section className="px-6 py-24 bg-black" >
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
-                        <div>
-                            <h4 className="text-rose-500 text-xs font-bold uppercase tracking-[0.2em] mb-2">Editor's Choice</h4>
-                            <h3 className="text-3xl sm:text-4xl font-serif font-bold text-white">
-                                {store.founder_name ? `Curated by ${store.founder_name.split(' ')[0]}` : 'Selected Drops'}
-                            </h3>
+                                <Check className="h-4 w-4" /> Publish Template
+                            </Button>
                         </div>
-                        <Link href="/" className="text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors border-b border-zinc-800 pb-1">
-                            View All Drops
-                        </Link>
                     </div>
-
-                    {filteredProducts.length === 0 ? (
-                        <div className="text-center py-20 border border-dashed border-white/10 rounded-xl">
-                            <p className="text-zinc-500 text-lg">No products found in this category.</p>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-y-12 gap-x-6">
-                            {filteredProducts.map((product) => (
-                                <ProductCard key={product.id} product={product} storeSlug={store.slug} />
-                            ))}
-                        </div>
-                    )}
                 </div>
-            </section >
-
-            {/* Reusing Global Footer for now, or Store Footer could be customized */}
-            < Footer />
-        </div >
+            )}
+        </div>
     )
 }

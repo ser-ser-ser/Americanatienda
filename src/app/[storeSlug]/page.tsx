@@ -43,8 +43,16 @@ export default async function StorePage({ params }: { params: { storeSlug: strin
         .select('*')
         .eq('store_id', store.id)
 
+    // Placeholder for storeTheme, assuming it would be fetched or derived
+    // For the purpose of this edit, we'll define a dummy storeTheme to make the syntax valid.
+    // In a real application, this would come from your data fetching.
+    const storeTheme = { gradient: 'from-blue-500 to-purple-600' }; // Example gradient
+
     return (
         <div className="min-h-screen bg-background">
+            {/* Background Gradient */}
+            <div className={`fixed inset-0 bg-linear-to-br ${storeTheme.gradient} opacity-5 z-0 pointer-events-none`} />
+
             {/* Store Header */}
             {/* Store Header with Dynamic Cover */}
             <div className="relative w-full h-[40vh] min-h-[300px] bg-zinc-900 overflow-hidden group">

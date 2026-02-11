@@ -249,7 +249,7 @@ export function DashboardSidebar() {
 
             <div className="p-4 border-t border-white/5">
                 <Link href="/dashboard/buyer/settings?tab=profile" className="flex items-center gap-3 hover:bg-white/5 p-2 rounded-lg transition-colors group">
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-zinc-800 to-zinc-700 border border-white/10 flex items-center justify-center shadow-inner group-hover:border-pink-500/50 transition-colors">
+                    <div className="h-9 w-9 rounded-full bg-linear-to-tr from-zinc-800 to-zinc-700 border border-white/10 flex items-center justify-center shadow-inner group-hover:border-pink-500/50 transition-colors">
                         <span className="text-xs font-bold text-white">{user?.email?.[0]?.toUpperCase()}</span>
                     </div>
                     <div className="flex flex-col text-left overflow-hidden">

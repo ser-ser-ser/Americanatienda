@@ -60,7 +60,7 @@ export function TemplateRenderer({ store, templateConfig, children }: TemplateRe
             {/* Hero Section */}
             <section className={`relative ${hero.type === 'fullscreen-image' ? 'h-screen' : 'h-[60vh]'}`}>
                 {hero.type === 'fullscreen-image' && (
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60" />
+                    <div className="absolute inset-0 bg-linear-to-b from-transparent to-black/60" />
                 )}
                 <div className="relative z-10 flex items-center justify-center h-full px-6">
                     <div className="text-center max-w-4xl">

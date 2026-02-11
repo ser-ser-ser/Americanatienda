@@ -67,7 +67,7 @@ export default function OnboardingSplashPage() {
                     <div className="space-y-6">
                         <Button
                             onClick={handleStart}
-                            className="w-full h-14 bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white font-bold tracking-[0.1em] uppercase rounded-md shadow-[0_0_20px_rgba(236,72,153,0.3)] transition-all transform hover:scale-[1.02]"
+                            className="w-full h-14 bg-linear-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white font-bold tracking-widest uppercase rounded-md shadow-[0_0_20px_rgba(236,72,153,0.3)] transition-all transform hover:scale-[1.02]"
                         >
                             Start Application
                         </Button>

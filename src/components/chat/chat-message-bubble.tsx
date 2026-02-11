@@ -48,7 +48,7 @@ export function ChatMessageBubble({ message, isMe }: ChatMessageBubbleProps) {
                     </div>
                 )}
 
-                <div className="text-[13.5px] leading-relaxed font-medium tracking-tight break-words">
+                <div className="text-[13.5px] leading-relaxed font-medium tracking-tight wrap-break-word">
                     {message.content}
                 </div>
 
@@ -64,7 +64,7 @@ export function ChatMessageBubble({ message, isMe }: ChatMessageBubbleProps) {
                             {message.is_read ? (
                                 <div className="relative flex items-center">
                                     <CheckCheck className="h-3 w-3 text-cyan-400" />
-                                    <div className="absolute inset-0 bg-cyan-400/20 blur-[4px] rounded-full" />
+                                    <div className="absolute inset-0 bg-cyan-400/20 blur-xs rounded-full" />
                                 </div>
                             ) : (
                                 <Check className="h-3 w-3 text-white/50" />

@@ -10,7 +10,7 @@ export default function RegistrationSuccessPage() {
         <div className="min-h-screen bg-black text-white overflow-hidden relative font-sans">
 
             {/* Header */}
-            <header className="absolute top-0 left-0 right-0 z-50 px-12 py-8 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
+            <header className="absolute top-0 left-0 right-0 z-50 px-12 py-8 flex justify-between items-center bg-linear-to-b from-black/80 to-transparent">
                 <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                     <span className="text-pink-600 font-bold text-xl tracking-tighter">AMERICANA</span>
                     <span className="text-zinc-500 text-[10px] tracking-widest uppercase mt-1">Marketplace</span>
@@ -31,7 +31,7 @@ export default function RegistrationSuccessPage() {
                         src="https://images.unsplash.com/photo-1537832816519-689ad163238b?q=80&w=2000&auto=format&fit=crop"
                         className="w-full h-full object-cover opacity-20"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black via-black/50 to-transparent" />
                 </div>
 
                 <div className="relative z-10 animate-fade-in-up">
@@ -42,7 +42,7 @@ export default function RegistrationSuccessPage() {
                     <h1 className="text-7xl font-black text-white leading-none tracking-tighter mb-2">
                         YOUR STORE IS
                     </h1>
-                    <h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-white leading-none tracking-tighter italic mb-8">
+                    <h1 className="text-7xl font-black text-transparent bg-clip-text bg-linear-to-r from-pink-600 to-white leading-none tracking-tighter italic mb-8">
                         BEING BORN.
                     </h1>
 
@@ -52,7 +52,7 @@ export default function RegistrationSuccessPage() {
 
                     <div className="flex gap-4 justify-center">
                         <Link href="/dashboard/vendor">
-                            <Button className="h-12 px-8 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_25px_rgba(236,72,153,0.4)] transition-transform hover:scale-105">
+                            <Button className="h-12 px-8 bg-linear-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-bold uppercase tracking-wider rounded-full shadow-[0_0_25px_rgba(236,72,153,0.4)] transition-transform hover:scale-105">
                                 Visit your Dashboard <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                         </Link>

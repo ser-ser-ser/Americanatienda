@@ -109,7 +109,7 @@ export default function VendorProfilePage() {
                             <CardTitle className="text-lg">Portrait</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="aspect-[3/4] bg-black rounded-lg overflow-hidden border border-zinc-800 relative group">
+                            <div className="aspect-3/4 bg-black rounded-lg overflow-hidden border border-zinc-800 relative group">
                                 {formData.founder_image_url ? (
                                     <img
                                         src={formData.founder_image_url}

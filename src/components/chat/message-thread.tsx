@@ -68,7 +68,7 @@ export default function MessageThread({ conversationId, onBack }: MessageThreadP
     return (
         <div className="flex flex-col h-full bg-zinc-950/40 backdrop-blur-3xl relative">
             {/* Ambient Background Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-purple-500/5 pointer-events-none" />
+            <div className="absolute inset-0 bg-linear-to-br from-indigo-500/5 via-transparent to-purple-500/5 pointer-events-none" />
 
             {/* Header */}
             <div className="h-20 px-6 flex items-center justify-between border-b border-white/5 bg-white/5 backdrop-blur-xl sticky top-0 z-20">

@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
                     <Link href="/login" className="absolute left-6 top-6 text-zinc-400 hover:text-white transition-colors">
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
-                    <span className="text-2xl font-serif font-bold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent block mb-2">
+                    <span className="text-2xl font-serif font-bold tracking-tight bg-linear-to-r from-white to-zinc-400 bg-clip-text text-transparent block mb-2">
                         AMERICANA
                     </span>
                     <CardTitle className="text-2xl font-serif text-white">Reset Password</CardTitle>

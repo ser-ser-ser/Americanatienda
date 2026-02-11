@@ -69,7 +69,7 @@ export function TrackingTimeline({ status, created_at, estimated_delivery }: Tra
 
                         {/* Connector Line (except last item) */}
                         {index < steps.length - 1 && (
-                            <div className={`hidden md:block h-[1px] flex-1 mx-4 ${step.completed ? 'bg-pink-600' : 'bg-pink-900/20'}`} />
+                            <div className={`hidden md:block h-px flex-1 mx-4 ${step.completed ? 'bg-pink-600' : 'bg-pink-900/20'}`} />
                         )}
                     </div>
                 ))}

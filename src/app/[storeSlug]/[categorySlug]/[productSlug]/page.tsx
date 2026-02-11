@@ -7,10 +7,11 @@ import { notFound } from 'next/navigation'
 import { Product } from '@/types'
 import { AddToCartButton } from '@/components/cart/add-to-cart-button'
 import { StoreHeader } from '@/components/layout/store-header'
+import { MOCK_PRODUCTS } from '@/lib/mock-data'
 
 // Force static generation
 export const dynamic = 'force-static'
-export const dynamicParams = false
+export const dynamicParams = true
 
 export async function generateStaticParams() {
     console.log('--- GENERATING PRODUCT PARAMS [HYBRID MODE] ---');
@@ -35,18 +36,43 @@ export async function generateStaticParams() {
     }
 }
 
-export default async function ProductPage({ params }: { params: Promise<{ storeSlug: string, categorySlug: string, productSlug: string }> }) {
+export default async function ProductPage({ params, searchParams }: { params: Promise<{ storeSlug: string, categorySlug: string, productSlug: string }>, searchParams?: Promise<{ mode?: string }> }) {
     const { storeSlug, categorySlug, productSlug } = await params
+    const { mode } = (await searchParams) || {}
     const supabase = await createClient()
 
-    // 2. Fetch Product Data (Polymorphic)
-    const { data: productData, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('slug', productSlug)
-        .single()
+    let productData: any = null;
 
-    if (error || !productData) {
+    // 1. Check for Mock Data (Builder Mode or Mock ID)
+    if (mode === 'builder' || productSlug.startsWith('mock-') || MOCK_PRODUCTS.some(p => p.slug === productSlug || p.id === productSlug)) {
+        productData = MOCK_PRODUCTS.find(p => p.slug === productSlug || p.id === productSlug)
+        // Add required fields for type safety if missing in mock
+        if (productData) {
+            productData = {
+                ...productData,
+                store_id: 'mock-store',
+                store_type: 'general',
+                images: null,
+                sku: 'MOCK-SKU',
+                category_id: 'mock-category'
+            }
+        }
+    }
+
+    // 2. If not mock, Fetch from DB
+    if (!productData) {
+        const { data, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('slug', productSlug)
+            .single()
+
+        if (!error && data) {
+            productData = data
+        }
+    }
+
+    if (!productData) {
         // In static export, returning 404 is fine or showing error
         // But since we control the slug via generateStaticParams, it implies slug exists (unless deleted since build)
         return notFound()
@@ -82,7 +108,7 @@ export default async function ProductPage({ params }: { params: Promise<{ storeS
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
                     {/* Image Gallery */}
                     <div className="space-y-4">
-                        <div className="aspect-[4/5] rounded-[2rem] overflow-hidden border border-white/10 relative bg-zinc-900 group">
+                        <div className="aspect-4/5 rounded-4xl overflow-hidden border border-white/10 relative bg-zinc-900 group">
                             {product.image_url ? (
                                 <img
                                     src={product.image_url}

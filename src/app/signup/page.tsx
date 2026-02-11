@@ -72,7 +72,7 @@ export default function SignupPage() {
                         </Link>
                     </div>
                     <Link href="/" className="block mb-6 pt-4">
-                        <span className="text-2xl font-serif font-bold tracking-tight bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+                        <span className="text-2xl font-serif font-bold tracking-tight bg-linear-to-r from-white to-zinc-400 bg-clip-text text-transparent">
                             AMERICANA
                         </span>
                     </Link>

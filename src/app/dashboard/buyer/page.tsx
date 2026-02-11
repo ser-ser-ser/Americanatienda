@@ -100,7 +100,7 @@ export default function BuyerDashboardPage() {
             <main className="max-w-7xl mx-auto px-6 md:px-12 pt-8">
 
                 {/* 1. Header & Welcome */}
-                <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter mb-8 bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-500">
+                <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter mb-8 bg-clip-text text-transparent bg-linear-to-r from-white to-zinc-500">
                     WELCOME BACK, <span className="uppercase">{user?.user_metadata?.full_name?.split(' ')[0] || 'TRAVELER'}</span>
                 </h1>
 
@@ -143,7 +143,7 @@ export default function BuyerDashboardPage() {
                             <div className="flex-1 bg-[#0A0A0A] border border-white/5 rounded-3xl p-6 flex flex-col justify-between">
                                 <div>
                                     <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-1">Member Tier</div>
-                                    <div className="text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-br from-[#FFD700] to-[#B8860B]">Gold</div>
+                                    <div className="text-3xl font-black italic text-transparent bg-clip-text bg-linear-to-br from-[#FFD700] to-[#B8860B]">Gold</div>
                                 </div>
                                 <div className="text-[10px] text-zinc-500 mt-2">Next Tier: Platinum</div>
                             </div>
@@ -264,7 +264,7 @@ export default function BuyerDashboardPage() {
 
                             {/* Carrier Info Bar */}
                             {order.carrier && (
-                                <div className="px-6 md:px-8 py-3 bg-white/[0.02] flex items-center gap-3 border-b border-white/5">
+                                <div className="px-6 md:px-8 py-3 bg-white/2 flex items-center gap-3 border-b border-white/5">
                                     <Truck className="h-4 w-4 text-zinc-500" />
                                     <span className="text-xs text-zinc-400">Shipped via <strong className="text-white">{order.carrier}</strong></span>
                                     {order.tracking_number && (

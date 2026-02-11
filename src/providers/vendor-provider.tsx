@@ -38,19 +38,37 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        const { data } = await supabase
+        // 1. Fetch Owned Stores
+        const { data: ownedStores, error: ownedError } = await supabase
             .from('stores')
             .select('*')
             .eq('owner_id', user.id)
-            .order('created_at', { ascending: false })
+
+        // 2. Fetch Member Stores
+        const { data: memberStoresData, error: memberError } = await supabase
+            .from('store_members')
+            .select('store:stores(*)')
+            .eq('user_id', user.id)
+
+        const memberStores = memberStoresData?.map((m: any) => m.store) || []
+
+        // Combine and dedup
+        const allStores = [...(ownedStores || []), ...memberStores].filter((s, index, self) =>
+            index === self.findIndex((t) => t.id === s.id)
+        )
+
+        // Sort by created_at
+        const data = allStores.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        const error = ownedError || memberError
 
         if (data) {
             setStores(data)
 
+            // Auto Select Logic
             setActiveStore(prev => {
                 if (data.length > 0) {
                     if (prev) {
-                        const stillExists = data.find(s => s.id === prev.id)
+                        const stillExists = data.find((s: Store) => s.id === prev.id)
                         return stillExists || data[0]
                     }
                     return data[0]
@@ -58,6 +76,7 @@ export function VendorProvider({ children }: { children: React.ReactNode }) {
                 return null
             })
         }
+        if (error) console.error("Error loading stores:", error)
         setIsLoading(false)
     }, []) // Dependencies empty to prevent loops, supabase client is stable enough
 

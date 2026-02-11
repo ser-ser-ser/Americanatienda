@@ -208,7 +208,7 @@ export default function SellerApplicationPage() {
                         </div>
 
                         <Button
-                            className="w-full h-14 bg-gradient-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white font-bold tracking-wide rounded-lg text-base shadow-[0_0_20px_rgba(236,72,153,0.4)]"
+                            className="w-full h-14 bg-linear-to-r from-pink-600 to-pink-500 hover:from-pink-500 hover:to-pink-400 text-white font-bold tracking-wide rounded-lg text-base shadow-[0_0_20px_rgba(236,72,153,0.4)]"
                             onClick={handleSubmit}
                             disabled={loading}
                         >

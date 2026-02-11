@@ -32,7 +32,7 @@ export default function VendorLoginPage() {
             setError(error.message)
             setLoading(false)
         } else {
-            router.push('/dashboard/vendor')
+            router.push('/dashboard')
             router.refresh()
         }
     }
@@ -43,7 +43,7 @@ export default function VendorLoginPage() {
             {/* LEFT COLUMN: Vendor Branding */}
             <div className="hidden lg:flex w-1/2 relative bg-zinc-950 border-r border-white/10">
                 {/* Darker, edgier background for vendors */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-zinc-900 to-black z-0" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-zinc-900 to-black z-0" />
 
                 {/* Abstract Grid Line */}
                 <div className="absolute inset-0 z-0 opacity-20"
