@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Loader2, Save, ExternalLink, Image as ImageIcon, MapPin, Globe, Mail, UploadCloud, CheckCircle2, Video, Sparkles } from 'lucide-react'
+import { Loader2, Save, ExternalLink, Image as ImageIcon, MapPin, Globe, Mail, UploadCloud, CheckCircle2, Video, Sparkles, Trash2 } from 'lucide-react'
 import { FileUpload } from '@/components/ui/file-upload'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +22,8 @@ export default function VendorSettingsPage() {
     const { activeStore, refreshStores, isLoading } = useVendor()
 
     const [saving, setSaving] = useState(false)
+    const [deleting, setDeleting] = useState(false)
+    const [deleteConfirm, setDeleteConfirm] = useState('')
 
     const [formData, setFormData] = useState({
         name: '',
@@ -77,14 +79,35 @@ export default function VendorSettingsPage() {
 
             if (error) throw error
             toast.success('Store Portal Updated Successfully')
-
-            // Refresh context so the Layout and other parts see the new name/logo etc.
             await refreshStores()
 
         } catch (error: any) {
             toast.error(error.message || 'Failed to update store')
         } finally {
             setSaving(false)
+        }
+    }
+
+    const handleDeleteStore = async () => {
+        if (!activeStore || deleteConfirm !== activeStore.name) return
+        setDeleting(true)
+        try {
+            const sid = activeStore.id
+            const convIds = (await supabase.from('conversations').select('id').eq('store_id', sid)).data?.map((c: any) => c.id) || []
+            if (convIds.length > 0) await supabase.from('messages').delete().in('conversation_id', convIds)
+            await supabase.from('conversations').delete().eq('store_id', sid)
+            const orderIds = (await supabase.from('orders').select('id').eq('store_id', sid)).data?.map((o: any) => o.id) || []
+            if (orderIds.length > 0) await supabase.from('order_items').delete().in('order_id', orderIds)
+            await supabase.from('orders').delete().eq('store_id', sid)
+            await supabase.from('products').delete().eq('store_id', sid)
+            const { error } = await supabase.from('stores').delete().eq('id', sid)
+            if (error) throw error
+            toast.success('Tienda eliminada correctamente.')
+            router.replace('/dashboard/vendor/setup')
+        } catch (err: any) {
+            toast.error(err.message || 'Error al eliminar la tienda')
+        } finally {
+            setDeleting(false)
         }
     }
 
@@ -430,6 +453,41 @@ export default function VendorSettingsPage() {
                     </div>
 
                 </div>
+
+                {/* DANGER ZONE */}
+                <div className="mt-16 border border-red-900/40 rounded-2xl p-8 bg-red-950/10">
+                    <div className="flex items-center gap-3 mb-6">
+                        <Trash2 className="h-5 w-5 text-red-500" />
+                        <div>
+                            <h3 className="text-lg font-bold text-red-500">Zona de Peligro</h3>
+                            <p className="text-xs text-zinc-500">Esta acción es permanente e irreversible.</p>
+                        </div>
+                    </div>
+                    <p className="text-sm text-zinc-400 mb-6">
+                        Al eliminar tu tienda se borrarán todos los productos, órdenes, conversaciones e imágenes asociadas.
+                        Escribe el nombre exacto de tu tienda para confirmar:
+                        <span className="font-bold text-white ml-1">{activeStore.name}</span>
+                    </p>
+                    <div className="flex gap-3 items-center">
+                        <input
+                            type="text"
+                            placeholder={`Escribe "${activeStore.name}" para confirmar`}
+                            value={deleteConfirm}
+                            onChange={(e) => setDeleteConfirm(e.target.value)}
+                            className="flex-1 bg-black border border-red-900/50 rounded-lg px-4 py-2 text-sm text-white focus:outline-none focus:border-red-500 placeholder:text-zinc-600"
+                        />
+                        <Button
+                            variant="destructive"
+                            disabled={deleteConfirm !== activeStore.name || deleting}
+                            onClick={handleDeleteStore}
+                            className="bg-red-700 hover:bg-red-600 font-bold uppercase tracking-wider min-w-[160px]"
+                        >
+                            {deleting ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                            {deleting ? 'Eliminando...' : 'Eliminar Tienda'}
+                        </Button>
+                    </div>
+                </div>
+
             </div>
         </div>
     )

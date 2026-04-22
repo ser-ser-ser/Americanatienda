@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { CheckCircle2, XCircle, Search, MoreHorizontal, ShieldCheck, MapPin, Mail, Globe, FileText, Check, AlertCircle } from 'lucide-react'
+import { CheckCircle2, XCircle, Search, MoreHorizontal, ShieldCheck, MapPin, Mail, Globe, FileText, Check, AlertCircle, Trash2 } from 'lucide-react'
 import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 
@@ -15,6 +15,7 @@ export default function MasterAdminStoresPage() {
     const [selectedStore, setSelectedStore] = useState<any | null>(null)
     const [storeProducts, setStoreProducts] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
+    const [deleting, setDeleting] = useState(false)
 
     // Data Load
     const fetchStores = async () => {
@@ -66,9 +67,39 @@ export default function MasterAdminStoresPage() {
         }
     }
 
-    useEffect(() => {
-        fetchStores()
-    }, [])
+    const deleteStore = async () => {
+        if (!selectedStore) return
+        const confirmed = window.confirm(
+            `¿Eliminar permanentemente la tienda "${selectedStore.name}"?\n\nEsto borrará todos sus productos, órdenes y conversaciones. Esta acción NO se puede deshacer.`
+        )
+        if (!confirmed) return
+
+        setDeleting(true)
+        try {
+            const sid = selectedStore.id
+            // Cascade delete in order
+            await supabase.from('messages').delete().in('conversation_id',
+                (await supabase.from('conversations').select('id').eq('store_id', sid)).data?.map((c: any) => c.id) || []
+            )
+            await supabase.from('conversations').delete().eq('store_id', sid)
+            await supabase.from('order_items').delete().in('order_id',
+                (await supabase.from('orders').select('id').eq('store_id', sid)).data?.map((o: any) => o.id) || []
+            )
+            await supabase.from('orders').delete().eq('store_id', sid)
+            await supabase.from('products').delete().eq('store_id', sid)
+            const { error } = await supabase.from('stores').delete().eq('id', sid)
+            if (error) throw error
+
+            toast.success(`Tienda "${selectedStore.name}" eliminada correctamente.`)
+            setSelectedStore(null)
+            fetchStores()
+        } catch (err: any) {
+            toast.error(err.message || 'Error al eliminar la tienda')
+        } finally {
+            setDeleting(false)
+        }
+    }
+
 
     if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-zinc-500">Loading Master Admin...</div>
 
@@ -319,15 +350,24 @@ export default function MasterAdminStoresPage() {
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
+                            <div className="flex gap-3">
+                                <Button
+                                    variant="ghost"
+                                    className="border border-red-900/50 text-red-600 hover:bg-red-950 hover:text-red-400 font-bold uppercase tracking-wider"
+                                    onClick={deleteStore}
+                                    disabled={deleting}
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    {deleting ? 'Eliminando...' : 'Eliminar Tienda'}
+                                </Button>
                                 <Button variant="outline" className="border-zinc-800 text-red-500 hover:bg-red-950 hover:text-red-400 font-bold uppercase tracking-wider" onClick={() => updateStatus('suspended')}>
-                                    Reject
+                                    Rechazar
                                 </Button>
                                 <Button variant="outline" className="border-zinc-800 text-white hover:bg-zinc-800 font-bold uppercase tracking-wider">
-                                    Request More Info
+                                    Pedir más info
                                 </Button>
                                 <Button className="bg-green-600 hover:bg-green-700 text-white font-bold uppercase tracking-wider px-8" onClick={() => updateStatus('active')}>
-                                    Approve Store
+                                    Aprobar Tienda
                                 </Button>
                             </div>
                         </div>

@@ -80,18 +80,18 @@ export default function Home() {
                         setNavLinks(JSON.parse(contentMap['nav_categories']))
                     } catch (e) {
                         setNavLinks([
-                            { label: 'Categories', link: '/collections' },
-                            { label: 'Stores', link: '/shops' },
+                            { label: 'Colecciones', link: '/collections' },
                             { label: 'Editorial', link: '/editorial' },
-                            { label: 'The Club', link: '/the-club' }
+                            { label: 'The Club', link: '/the-club' },
+                            { label: 'Contacto', link: '/contact' }
                         ])
                     }
                 } else {
                     setNavLinks([
-                        { label: 'Categories', link: '/collections' },
-                        { label: 'Stores', link: '/shops' },
+                        { label: 'Colecciones', link: '/collections' },
                         { label: 'Editorial', link: '/editorial' },
-                        { label: 'The Club', link: '/the-club' }
+                        { label: 'The Club', link: '/the-club' },
+                        { label: 'Contacto', link: '/contact' }
                     ])
                 }
             }
@@ -253,22 +253,22 @@ export default function Home() {
             >
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-md text-xs font-bold text-primary mb-8 tracking-widest uppercase shadow-[0_0_30px_-5px_var(--primary)]">
                     <Sparkles className="h-3 w-3 animate-pulse" />
-                    <span>Est. 2026 • The Resistance</span>
+                    <span>Est. 2026 • Marcas Independientes de México</span>
                 </div>
 
                 <h1 className="text-6xl md:text-9xl font-serif font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-zinc-200 to-zinc-600 mb-6 drop-shadow-2xl">
                     {content['home_hero_title'] || 'AMERICANA'} <br />
-                    <span className="italic font-light text-white">{content['home_hero_subtitle'] || 'REBEL. RESIST. EXIST.'}</span>
+                    <span className="italic font-light text-white">{content['home_hero_subtitle'] || 'Hecho con Intención. Diseñado para Durar.'}</span>
                 </h1>
 
                 <p className="text-xl md:text-2xl text-zinc-300 max-w-2xl mx-auto mb-12 font-light leading-relaxed mix-blend-plus-lighter">
-                    {content['home_hero_description'] || 'Join the anti-system. A decentralized marketplace for the irreverent, the self-sufficient, and the visionaries. Redefine consumption.'}
+                    {content['home_hero_description'] || 'Descubre las mejores marcas independientes de México y América Latina. Moda, arte y estilo de vida, curados con propósito.'}
                 </p>
 
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Link href="#categories">
                         <Button size="lg" className="bg-white text-black hover:bg-zinc-200 text-lg px-8 py-6 rounded-full font-bold tracking-tight shadow-[0_0_40px_-5px_rgba(255,255,255,0.4)] transition-all">
-                            {content['home_hero_cta_label'] || 'Join the Rebellion'}
+                            {content['home_hero_cta_label'] || 'Explorar Colecciones'}
                         </Button>
                     </Link>
                 </motion.div>
@@ -279,8 +279,8 @@ export default function Home() {
                 <div className="container mx-auto px-6">
                     <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
                         <div>
-                            <span className="text-primary text-sm font-bold uppercase tracking-widest block mb-2">Arsenal</span>
-                            <h2 className="text-3xl md:text-5xl font-serif font-bold text-white">Suministros Rebeldes</h2>
+                            <span className="text-primary text-sm font-bold uppercase tracking-widest block mb-2">Explora</span>
+                            <h2 className="text-3xl md:text-5xl font-serif font-bold text-white">Colecciones de Temporada</h2>
                         </div>
                         <Link href="/collections">
                             <Button variant="outline" className="text-white border-white/20 hover:bg-white hover:text-black">
@@ -402,64 +402,28 @@ export default function Home() {
             </section>
 
 
-            {/* 4. STORES / PORTALS (Swapped from Top) */}
+            {/* 4. CTA — Vende con nosotros */}
             <section className="py-24 px-6 bg-zinc-950 border-t border-white/5">
-                <div className="max-w-7xl mx-auto space-y-12">
-                    <div className="flex flex-col md:flex-row items-end justify-between mb-8 gap-6 px-4 md:px-0">
-                        <div className="text-left">
-                            <span className="text-primary text-sm font-bold uppercase tracking-widest block mb-2">Autonomous Zones</span>
-                            <h2 className="text-4xl md:text-5xl font-serif font-bold text-white">Independent Cells</h2>
-                        </div>
-                        <Link href="/shops">
-                            <Button variant="outline" className="border-white/10 text-zinc-400 hover:bg-white hover:text-black rounded-full px-8">
-                                Ver más
+                <div className="max-w-4xl mx-auto text-center">
+                    <span className="text-primary text-sm font-bold uppercase tracking-widest block mb-4">Para Creadores & Marcas</span>
+                    <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6">
+                        Vende en Americana Tienda
+                    </h2>
+                    <p className="text-zinc-400 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+                        Abre tu tienda en minutos. Sin comisiones abusivas, sin intermediarios. 
+                        Tu marca, tu historia, tu precio.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Link href="/onboarding">
+                            <Button size="lg" className="bg-white text-black hover:bg-zinc-200 font-bold px-10 py-6 rounded-full text-base">
+                                Comenzar gratis <ArrowRight className="ml-2 h-5 w-5" />
                             </Button>
                         </Link>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                        {stores?.map((store, index) => {
-                            const mediaUrl = store.cover_video_url || store.cover_image_url
-
-                            return (
-                                <Link key={store.id} href={`/shops/${store.slug}`} className="group block relative aspect-video md:aspect-[2/1] bg-zinc-900 rounded-3xl overflow-hidden border border-white/10 hover:border-white/30 transition-all">
-                                    {/* Background */}
-                                    {mediaUrl ? (
-                                        mediaUrl.match(/\.(mp4|webm|ogg)$/i) || mediaUrl.includes('cloudinary') && mediaUrl.includes('video') ? (
-                                            <video
-                                                src={mediaUrl}
-                                                autoPlay muted loop playsInline
-                                                className="w-full h-full object-cover opacity-50 group-hover:opacity-40 transition-opacity duration-700"
-                                            />
-                                        ) : (
-                                            <img src={mediaUrl} alt={store.name} className="w-full h-full object-cover opacity-50 group-hover:opacity-40 transition-opacity duration-700" />
-                                        )
-                                    ) : (
-                                        <div className={`w-full h-full bg-gradient-to-br ${index % 2 === 0 ? 'from-rose-900/40 via-black to-black' : 'from-emerald-900/40 via-black to-black'}`} />
-                                    )}
-
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-
-                                    <div className="absolute inset-0 p-8 flex flex-col justify-end items-start tracking-wide">
-                                        <div className="px-3 py-1 bg-white/10 backdrop-blur rounded-full text-xs font-bold uppercase text-white mb-3">
-                                            Portal {index + 1}
-                                        </div>
-                                        <h3 className="text-3xl font-serif font-bold text-white italic group-hover:text-primary transition-colors">
-                                            {store.name}
-                                        </h3>
-                                        {store.description && (
-                                            <p className="text-zinc-400 text-sm mt-2 max-w-md line-clamp-2">
-                                                {store.description}
-                                            </p>
-                                        )}
-
-                                        <div className="mt-6 flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-white/50 group-hover:text-white transition-colors">
-                                            Enter Portal <ArrowRight className="h-4 w-4" />
-                                        </div>
-                                    </div>
-                                </Link>
-                            )
-                        })}
+                        <Link href="/editorial">
+                            <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 font-bold px-10 py-6 rounded-full text-base">
+                                Conocer más
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </section>

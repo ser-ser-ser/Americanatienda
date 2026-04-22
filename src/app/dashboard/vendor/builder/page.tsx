@@ -1,11 +1,20 @@
 import { Suspense } from 'react'
-import PageBuilder from '@/components/vendor/builder/page-builder'
-import { saveVendorPageAction, getBuilderInitData } from '@/app/actions/builder-actions'
+import BuilderDashboard from '@/components/vendor/builder/builder-dashboard'
+import { createClient } from '@/utils/supabase/server'
 
 export default async function VendorBuilderPage() {
-    const initData = await getBuilderInitData('home')
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!initData) return null;
+    if (!user) return null
+
+    const { data: store } = await supabase
+        .from('stores')
+        .select('name, slug')
+        .eq('owner_id', user.id)
+        .single()
+
+    if (!store) return null
 
     return (
         <div className="h-screen w-full bg-black">
@@ -17,18 +26,11 @@ export default async function VendorBuilderPage() {
                         </div>
                         <p className="text-[10px] font-black text-white uppercase tracking-[0.2em] animate-pulse">Initializing Design Engine...</p>
                     </div>
-                    <style>{`
-            @keyframes loading {
-              0% { transform: translateX(-100%); }
-              100% { transform: translateX(300%); }
-            }
-          `}</style>
                 </div>
             }>
-                <PageBuilder
-                    storeName={initData.storeName}
-                    initialData={initData.initialData}
-                    onSave={saveVendorPageAction}
+                <BuilderDashboard
+                    storeName={store.name || "My Store"}
+                    storeSlug={store.slug || ""}
                 />
             </Suspense>
         </div>

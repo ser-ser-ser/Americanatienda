@@ -57,7 +57,7 @@ const NAV_GROUPS = [
         iconColor: 'text-blue-500',
         items: [
             { href: '/dashboard/admin/categories', icon: LayoutDashboard, label: 'Global Categories' },
-            { href: '/dashboard/admin/portals', icon: Store, label: 'Stores Portals' },
+            { href: '/dashboard/admin/portals', icon: Store, label: 'Vendor Portals' },
             { href: '/dashboard/admin/domain-registry', icon: Globe, label: 'Domain Registry' },
         ]
     },
@@ -75,6 +75,7 @@ const NAV_GROUPS = [
         label: 'CONTENT',
         iconColor: 'text-amber-500',
         items: [
+            { href: '/dashboard/admin/cms', icon: Layout, label: 'Visual CMS' },
             { href: '/dashboard/admin/editorial', icon: BookOpen, label: 'Editorial' },
             { href: '/dashboard/admin/club', icon: Crown, label: 'The Club' },
             { href: '/dashboard/admin/media', icon: ImageIcon, label: 'Media Library' },
@@ -116,12 +117,11 @@ export function AdminSidebar() {
                 ))}
 
                 <div className="pt-8">
-                    <h3 className="text-[10px] font-bold text-[#ff007f] uppercase tracking-[0.2em] mb-4 pl-4">Americana Stores</h3>
-                    <div className="px-2 space-y-3">
-                        <StoreSwitcher />
+                    <h3 className="text-[10px] font-bold text-[#ff007f] uppercase tracking-[0.2em] mb-4 pl-4">Vendor Management</h3>
+                    <div className="px-2">
                         <Button asChild variant="outline" className="w-full justify-start border-[#ff007f]/50 text-[#ff007f] hover:bg-[#ff007f]/10 uppercase font-bold text-[10px] tracking-widest h-9">
                             <LinkNext href="/dashboard/vendor">
-                                <Store className="mr-2 h-3.5 w-3.5" /> Go to Stores Admin
+                                <Store className="mr-2 h-3.5 w-3.5" /> Vendor Dashboard
                             </LinkNext>
                         </Button>
                     </div>

@@ -8,6 +8,7 @@ import { ChatSheet } from "@/components/chat/chat-sheet";
 // Removed FloatingChatButton - using inline chat buttons instead
 import { CartSheet } from "@/components/cart/cart-sheet";
 import { Toaster } from "@/components/ui/sonner";
+import "@/components/builder/register-components";
 
 const playfair = Playfair_Display({
     subsets: ["latin"],

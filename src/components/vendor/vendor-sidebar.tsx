@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button'
 const NAV_ITEMS = [
     // Management
     { href: '/dashboard/vendor', icon: LayoutDashboard, label: 'Command Center', section: 'Management' },
-    { href: '/dashboard/vendor/site-studio', icon: Globe, label: 'Site Studio', section: 'Management', iconColor: 'text-[#ff007f]' },
+    { href: '/dashboard/vendor/builder', icon: Globe, label: 'Site Studio', section: 'Management', iconColor: 'text-[#ff007f]' },
     { href: '/dashboard/vendor/products', icon: Package, label: 'Stock & Inventory', section: 'Management' },
     { href: '/dashboard/vendor/orders', icon: ShoppingBag, label: 'Orders', section: 'Management' },
     { href: '/dashboard/vendor/integrations', icon: Zap, label: 'Marketplace Connect', section: 'Management', iconColor: 'text-cyan-500' },
