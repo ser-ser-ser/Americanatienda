@@ -93,52 +93,56 @@ function VendorLayoutContent({ children }: { children: React.ReactNode }) {
         )
     }
 
+    const isBuilderPage = pathname.includes('/builder')
+
     return (
         <div className="flex h-screen w-full bg-black text-white font-sans overflow-hidden">
-            <VendorSidebar />
+            {!isBuilderPage && <VendorSidebar />}
 
             <div className="flex-1 flex flex-col min-w-0 bg-black relative">
                 {/* Global Top Bar */}
-                <header className="h-16 flex items-center justify-between border-b border-white/5 px-8 bg-black/50 backdrop-blur-xl z-40 shrink-0">
-                    <div className="flex items-center gap-4">
-                        <Badge variant="outline" className="border-cyan-500/30 text-cyan-500 text-[9px] font-bold uppercase px-2 h-5">
-                            {activeStore?.status?.toUpperCase() || 'OFFLINE'}
-                        </Badge>
-                        <h2 className="text-zinc-500 text-[10px] font-bold tracking-[0.2em] uppercase">
-                            Operational Command
-                        </h2>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                        {/* Notification Bell */}
-                        <NotificationBell />
-
-                        <div className="h-4 w-px bg-white/5"></div>
-
-                        {/* Store Selection Filter */}
-                        <div className="flex items-center gap-3">
-                            <select
-                                className="appearance-none bg-zinc-900/50 border border-white/5 rounded-lg px-3 py-1.5 text-[10px] text-white font-bold uppercase tracking-widest cursor-pointer transition-all hover:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500 min-w-[140px]"
-                                value={activeStore?.id || ''}
-                                onChange={(e) => selectStore(e.target.value)}
-                            >
-                                {stores.map(s => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.name?.toUpperCase()}
-                                    </option>
-                                ))}
-                            </select>
+                {!isBuilderPage && (
+                    <header className="h-16 flex items-center justify-between border-b border-white/5 px-8 bg-black/50 backdrop-blur-xl z-40 shrink-0">
+                        <div className="flex items-center gap-4">
+                            <Badge variant="outline" className="border-cyan-500/30 text-cyan-500 text-[9px] font-bold uppercase px-2 h-5">
+                                {activeStore?.status?.toUpperCase() || 'OFFLINE'}
+                            </Badge>
+                            <h2 className="text-zinc-500 text-[10px] font-bold tracking-[0.2em] uppercase">
+                                Operational Command
+                            </h2>
                         </div>
 
-                        <div className="h-4 w-px bg-white/5"></div>
+                        <div className="flex items-center gap-6">
+                            {/* Notification Bell */}
+                            <NotificationBell />
 
-                        <Link href={`/shops/${activeStore?.slug}`} target="_blank">
-                            <Button variant="ghost" size="sm" className="text-[9px] uppercase font-bold text-zinc-400 hover:text-cyan-500 gap-2">
-                                <Eye className="h-3.5 w-3.5" /> View Store
-                            </Button>
-                        </Link>
-                    </div>
-                </header>
+                            <div className="h-4 w-px bg-white/5"></div>
+
+                            {/* Store Selection Filter */}
+                            <div className="flex items-center gap-3">
+                                <select
+                                    className="appearance-none bg-zinc-900/50 border border-white/5 rounded-lg px-3 py-1.5 text-[10px] text-white font-bold uppercase tracking-widest cursor-pointer transition-all hover:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500 min-w-[140px]"
+                                    value={activeStore?.id || ''}
+                                    onChange={(e) => selectStore(e.target.value)}
+                                >
+                                    {stores.map(s => (
+                                        <option key={s.id} value={s.id}>
+                                            {s.name?.toUpperCase()}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="h-4 w-px bg-white/5"></div>
+
+                            <Link href={`/shops/${activeStore?.slug}`} target="_blank">
+                                <Button variant="ghost" size="sm" className="text-[9px] uppercase font-bold text-zinc-400 hover:text-cyan-500 gap-2">
+                                    <Eye className="h-3.5 w-3.5" /> View Store
+                                </Button>
+                            </Link>
+                        </div>
+                    </header>
+                )}
 
                 <main className="flex-1 overflow-auto relative custom-scrollbar">
                     {children}
