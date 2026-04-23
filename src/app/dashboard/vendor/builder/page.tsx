@@ -10,8 +10,9 @@ import { createClient } from '@/utils/supabase/client'
 import { useVendor } from '@/providers/vendor-provider'
 import { toast } from 'sonner'
 import { PageLayout, BLOCK_LIBRARY, PageTemplate, DEFAULT_THEMES } from '@/types/builder'
-import { Loader2, LayoutTemplate, ArrowRight, Zap, Eye, X } from 'lucide-react'
+import { Loader2, LayoutTemplate, ArrowRight, Zap, Eye, X, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import Link from 'next/link'
 
 // ─────────────────────────────────────────────────────────────
 // Vendor Templates — DTC e-commerce architecture
@@ -176,8 +177,16 @@ export default function VendorBuilderPage() {
         return (
             <>
                 {/* ── Template Grid ── */}
-                <div className="min-h-screen bg-[#080808] text-white flex flex-col items-center justify-center p-8">
-                    <div className="text-center mb-12">
+                <div className="min-h-screen bg-[#080808] text-white flex flex-col items-center justify-center p-8 relative">
+                    {/* Back Button */}
+                    <div className="absolute top-8 left-8">
+                        <Link href="/dashboard/vendor" className="flex items-center gap-2 text-zinc-500 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider">
+                            <ArrowLeft className="w-4 h-4" />
+                            Regresar
+                        </Link>
+                    </div>
+
+                    <div className="text-center mb-12 mt-8">
                         <div className="w-12 h-12 bg-[#ff007f]/10 border border-[#ff007f]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <Zap className="w-6 h-6 text-[#ff007f]" />
                         </div>
