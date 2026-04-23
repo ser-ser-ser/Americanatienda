@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { ShoppingBag, ArrowLeft, MessageCircle, Instagram } from 'lucide-react'
+import { ShoppingBag, ArrowLeft, MessageCircle, Instagram, MapPin, Clock } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Footer } from '@/components/footer'
@@ -227,6 +227,114 @@ export function DarkSocialTheme({ store, products, categories, user }: DarkSocia
                             ))}
                         </div>
                     )}
+                </div>
+            </section>
+
+            {/* Instagram Grid */}
+            <section className="bg-black py-16 border-t border-white/5 overflow-hidden">
+                <div className="max-w-7xl mx-auto px-6 mb-10 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h4 className="text-zinc-500 font-bold uppercase tracking-widest text-xs mb-2">Social Feed</h4>
+                        <h3 className="text-2xl font-serif text-white hover:text-rose-500 transition-colors cursor-pointer flex items-center gap-2">
+                            <Instagram className="h-6 w-6" />
+                            {store.instagram_handle ? `@${store.instagram_handle}` : `@${store.slug}`}
+                        </h3>
+                    </div>
+                </div>
+                <div className="flex w-full gap-2 px-2 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4">
+                    {/* Mock Instagram Images */}
+                    {[
+                        'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&h=600&fit=crop',
+                        'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=600&h=600&fit=crop',
+                        'https://images.unsplash.com/photo-1511511450040-677116ff389e?w=600&h=600&fit=crop',
+                        'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&h=600&fit=crop',
+                        'https://images.unsplash.com/photo-1509319117193-57bab727e09d?w=600&h=600&fit=crop'
+                    ].map((src, i) => (
+                        <div key={i} className="min-w-[280px] w-[280px] h-[340px] md:min-w-[320px] md:w-[320px] md:h-[400px] shrink-0 snap-center relative group cursor-pointer overflow-hidden rounded-xl bg-zinc-900 border border-white/10">
+                            <Image src={src} alt="Instagram Post" fill className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Instagram className="text-white h-8 w-8" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* Store Locator (Map) */}
+            <section className="bg-zinc-950 py-24 border-t border-white/5">
+                <div className="max-w-7xl mx-auto px-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                        <div className="space-y-6">
+                            <h4 className="text-rose-500 font-bold uppercase tracking-widest text-xs">Flagship Store</h4>
+                            <h3 className="text-4xl font-serif text-white">Visit {store.name}</h3>
+                            <p className="text-zinc-400 text-lg leading-relaxed max-w-md">
+                                Experience the collection in person. Book a private styling session at our main location.
+                            </p>
+                            <div className="pt-4 space-y-4 text-zinc-300">
+                                <div className="flex items-start gap-4">
+                                    <div className="p-3 bg-white/5 rounded-full"><MapPin className="h-5 w-5 text-white" /></div>
+                                    <div>
+                                        <p className="font-bold text-white">El Palacio de Hierro Polanco</p>
+                                        <p className="text-sm">Moliere 222, Polanco II Secc, Miguel Hidalgo, 11550 CDMX</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-4">
+                                    <div className="p-3 bg-white/5 rounded-full"><Clock className="h-5 w-5 text-white" /></div>
+                                    <div>
+                                        <p className="font-bold text-white">Store Hours</p>
+                                        <p className="text-sm">Mon - Sun: 11:00 AM - 9:00 PM</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="h-[400px] w-full rounded-2xl overflow-hidden grayscale contrast-125 hover:grayscale-0 transition-all duration-700 border border-white/10 shadow-2xl relative bg-zinc-900">
+                            <iframe 
+                                title="Store Location"
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1m3!1d15050.490184497576!2d-99.2066063!3d19.4385154!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d2021c5fdf6861%3A0x6bba8475855fde8b!2sEl%20Palacio%20de%20Hierro%20Polanco!5e0!3m2!1sen!2smx!4v1700000000000!5m2!1sen!2smx" 
+                                width="100%" 
+                                height="100%" 
+                                style={{ border: 0 }} 
+                                allowFullScreen={false} 
+                                loading="lazy" 
+                                referrerPolicy="no-referrer-when-downgrade"
+                            ></iframe>
+                            <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-black/20" />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Immersive Contact Form */}
+            <section className="bg-black py-24 border-t border-white/5 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-800 via-black to-black pointer-events-none" />
+                <div className="max-w-4xl mx-auto px-6 relative z-10 text-center">
+                    <h4 className="text-zinc-500 font-bold uppercase tracking-widest text-xs mb-4">Direct Channel</h4>
+                    <h3 className="text-4xl md:text-5xl font-serif text-white mb-6">Concierge & Enquiries</h3>
+                    <p className="text-zinc-400 mb-12 max-w-lg mx-auto">
+                        For bespoke requests, press inquiries, or private sourcing, leave a message directly for {store.founder_name ? store.founder_name.split(' ')[0] : 'our team'}.
+                    </p>
+                    
+                    <form className="space-y-6 text-left max-w-2xl mx-auto" onSubmit={(e) => e.preventDefault()}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase tracking-widest font-bold text-zinc-500">First Name</label>
+                                <input type="text" className="w-full bg-zinc-950 border border-zinc-800 rounded-none px-4 py-3 text-white focus:outline-none focus:border-rose-500 transition-colors" placeholder="Jane" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs uppercase tracking-widest font-bold text-zinc-500">Email Address</label>
+                                <input type="email" className="w-full bg-zinc-950 border border-zinc-800 rounded-none px-4 py-3 text-white focus:outline-none focus:border-rose-500 transition-colors" placeholder="jane@example.com" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-xs uppercase tracking-widest font-bold text-zinc-500">Message</label>
+                            <textarea rows={4} className="w-full bg-zinc-950 border border-zinc-800 rounded-none px-4 py-3 text-white focus:outline-none focus:border-rose-500 transition-colors resize-none" placeholder="How can we assist you?"></textarea>
+                        </div>
+                        <div className="pt-2">
+                            <Button className="w-full bg-white text-black hover:bg-zinc-200 rounded-none py-6 uppercase tracking-widest font-bold text-xs" type="submit">
+                                Send Message
+                            </Button>
+                        </div>
+                    </form>
                 </div>
             </section>
 
