@@ -29,7 +29,8 @@ import { Button } from '@/components/ui/button'
 const NAV_ITEMS = [
     // Americana Market (Marketplace Default Store Profile)
     { href: '/dashboard/vendor', icon: LayoutDashboard, label: 'Command Center', section: 'Tienda en Americana' },
-    { href: '/dashboard/vendor/settings', icon: Store, label: 'Store Portal', section: 'Tienda en Americana' },
+    { href: '/dashboard/vendor/portal', icon: Store, label: 'Store Portal', section: 'Tienda en Americana' },
+    { href: '/dashboard/vendor/profile', icon: Users, label: 'Visionary Profile', section: 'Tienda en Americana' },
     { href: '/dashboard/vendor/products', icon: Package, label: 'Inventario', section: 'Tienda en Americana' },
     { href: '/dashboard/vendor/orders', icon: ShoppingBag, label: 'Órdenes', section: 'Tienda en Americana' },
 
