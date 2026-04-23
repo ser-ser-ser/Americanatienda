@@ -25,61 +25,28 @@ import {
 import { Button } from '@/components/ui/button'
 
 const NAV_ITEMS = [
-    // Management
-    { href: '/dashboard/vendor', icon: LayoutDashboard, label: 'Command Center', section: 'Management' },
-    { href: '/dashboard/vendor/builder', icon: Globe, label: 'Site Studio', section: 'Management', iconColor: 'text-[#ff007f]' },
-    { href: '/dashboard/vendor/products', icon: Package, label: 'Stock & Inventory', section: 'Management' },
-    { href: '/dashboard/vendor/orders', icon: ShoppingBag, label: 'Orders', section: 'Management' },
-    { href: '/dashboard/vendor/integrations', icon: Zap, label: 'Marketplace Connect', section: 'Management', iconColor: 'text-cyan-500' },
-    { href: '/dashboard/vendor/team', icon: Users, label: 'Team & Access', section: 'Management', iconColor: 'text-cyan-500' },
+    // Boutique / Core
+    { href: '/dashboard/vendor', icon: LayoutDashboard, label: 'Command Center', section: 'Boutique' },
+    { href: '/dashboard/vendor/builder', icon: Globe, label: 'Site Studio', section: 'Boutique', iconColor: 'text-[#ff007f]' },
+    { href: '/dashboard/vendor/products', icon: Package, label: 'Inventario', section: 'Boutique' },
+    { href: '/dashboard/vendor/orders', icon: ShoppingBag, label: 'Órdenes', section: 'Boutique' },
+    { href: '/dashboard/vendor/integrations', icon: Zap, label: 'Marketplace Connect', section: 'Boutique', iconColor: 'text-cyan-500' },
 
-    // Marketing & Growth (Sandwich Architecture)
+    // Visibilidad & Canales (Requested by User)
     {
-        label: 'Social Hub',
+        label: 'Visibilidad & Canales',
         icon: Users,
         iconColor: 'text-purple-500',
-        section: 'Marketing & Growth',
+        section: 'Crecimiento',
         subItems: [
-            { label: 'Conexiones (FB, IG, WA)', href: '/dashboard/vendor/marketing/social-hub' },
-            { label: 'Mensajería CRM', href: '/dashboard/vendor/marketing/crm' },
-        ]
-    },
-    {
-        label: 'Tracking & Intelligence',
-        icon: Activity,
-        iconColor: 'text-cyan-500',
-        section: 'Marketing & Growth',
-        subItems: [
-            { label: 'Omnichannel Tracking', href: '/dashboard/vendor/marketing/pixels' },
-        ]
-    },
-    {
-        label: 'SEO & Branding',
-        icon: Globe,
-        iconColor: 'text-green-500',
-        section: 'Marketing & Growth',
-        subItems: [
-            { label: 'Metadatos y SEO Studio', href: '/dashboard/vendor/marketing/seo' },
-            { label: 'Favicon y OG Assets', href: '/dashboard/vendor/marketing/seo?tab=assets' },
-            { label: 'Custom Domains', href: '/dashboard/vendor/domains' },
-        ]
-    },
-    {
-        label: 'Ads Management',
-        icon: CreditCard,
-        iconColor: 'text-blue-500',
-        section: 'Marketing & Growth',
-        subItems: [
-            { label: 'FB/IG Ads Manager', href: '/dashboard/vendor/marketing/ads' },
-            { label: 'Reportes de ROAS', href: '/dashboard/vendor/marketing/ads/reports' },
+            { label: 'Conexiones (FB, IG, WP)', href: '/dashboard/vendor/marketing/social-hub' },
+            { label: 'Google & SEO Studio', href: '/dashboard/vendor/marketing/seo' },
         ]
     },
 
-    // Operations
-    { href: '/dashboard/chat', icon: MessageSquareIcon, label: 'Direct Messages', section: 'Operations', iconColor: 'text-[#ff007f]' },
-    { href: '/dashboard/vendor/payments', icon: CreditCard, label: 'Finances', section: 'Operations' },
-    { href: '/dashboard/vendor/shipping', icon: Truck, label: 'Logistics', section: 'Operations' },
-    { href: '/dashboard/vendor/analytics', icon: Activity, label: 'Intelligence', section: 'Operations' },
+    // Operaciones
+    { href: '/dashboard/chat', icon: MessageSquareIcon, label: 'Mensajes Directos', section: 'Operaciones', iconColor: 'text-[#ff007f]' },
+    { href: '/dashboard/vendor/payments', icon: CreditCard, label: 'Finanzas & Pagos', section: 'Operaciones' },
 ]
 
 function MessageSquareIcon({ className }: { className?: string }) {
