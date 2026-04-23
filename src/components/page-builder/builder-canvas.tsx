@@ -18,12 +18,19 @@ import {
 import { cn } from '@/lib/utils'
 import { BlockRenderer } from './block-renderer'
 
+import { useVendor } from '@/providers/vendor-provider'
+import { StoreNavbar } from '@/components/store/store-navbar'
+import { StoreFooter } from '@/components/store/store-footer'
+
 export function BuilderCanvas() {
     const {
         blocks, deviceMode, selectedBlockId, hoveredBlockId,
         isPreviewMode, setBlocks, selectBlock, hoverBlock,
         removeBlock, duplicateBlock, moveBlock, addBlock
     } = useBuilderStore()
+    
+    // Get store data to render real navbar/footer
+    const { activeStore } = useVendor()
 
     const sensors = useSensors(useSensor(PointerSensor, {
         activationConstraint: { distance: 8 }
@@ -64,47 +71,70 @@ export function BuilderCanvas() {
                 )}
 
                 <div className={cn(
-                    'bg-black min-h-screen',
+                    'bg-black min-h-screen flex flex-col relative',
                     deviceMode !== 'desktop' && 'pt-8'
                 )}>
-                    {blocks.length === 0 ? (
-                        <EmptyCanvas onAddBlock={addBlock} />
-                    ) : (
-                        <DndContext
-                            sensors={sensors}
-                            collisionDetection={closestCenter}
-                            onDragEnd={handleDragEnd}
-                        >
-                            <SortableContext
-                                items={blocks.map(b => b.id)}
-                                strategy={verticalListSortingStrategy}
+                    {/* READ-ONLY NAVBAR OVERLAY */}
+                    <div className="pointer-events-none opacity-80" style={{ zIndex: 40 }}>
+                        <StoreNavbar store={activeStore || { name: 'Mi Tienda' }} />
+                    </div>
+                    {/* Protect navbar space with absolute overlay to avoid clicks */}
+                    <div className="absolute top-0 left-0 right-0 h-16 z-50 cursor-not-allowed group" title="El menú se edita desde Configuración">
+                         <div className="absolute inset-0 bg-[#ff007f]/0 group-hover:bg-[#ff007f]/10 transition-colors flex items-center justify-center backdrop-blur-[1px] opacity-0 group-hover:opacity-100">
+                             <span className="bg-black text-white text-[10px] font-bold px-3 py-1.5 rounded-full">Menu Global</span>
+                         </div>
+                    </div>
+
+                    <div className="flex-1">
+                        {blocks.length === 0 ? (
+                            <EmptyCanvas onAddBlock={addBlock} />
+                        ) : (
+                            <DndContext
+                                sensors={sensors}
+                                collisionDetection={closestCenter}
+                                onDragEnd={handleDragEnd}
                             >
-                                {blocks.map((block, index) => (
-                                    <SortableBlock
-                                        key={block.id}
-                                        block={block}
-                                        index={index}
-                                        isSelected={selectedBlockId === block.id}
-                                        isHovered={hoveredBlockId === block.id}
-                                        isPreview={isPreviewMode}
-                                        onSelect={() => selectBlock(block.id)}
-                                        onHover={(h) => hoverBlock(h ? block.id : null)}
-                                        onDelete={() => removeBlock(block.id)}
-                                        onDuplicate={() => duplicateBlock(block.id)}
-                                        onMoveUp={() => moveBlock(index, index - 1)}
-                                        onMoveDown={() => moveBlock(index, index + 1)}
-                                        canMoveUp={index > 0}
-                                        canMoveDown={index < blocks.length - 1}
-                                    />
-                                ))}
-                            </SortableContext>
-                        </DndContext>
-                    )}
+                                <SortableContext
+                                    items={blocks.map(b => b.id)}
+                                    strategy={verticalListSortingStrategy}
+                                >
+                                    {blocks.map((block, index) => (
+                                        <SortableBlock
+                                            key={block.id}
+                                            block={block}
+                                            index={index}
+                                            isSelected={selectedBlockId === block.id}
+                                            isHovered={hoveredBlockId === block.id}
+                                            isPreview={isPreviewMode}
+                                            onSelect={() => selectBlock(block.id)}
+                                            onHover={(h) => hoverBlock(h ? block.id : null)}
+                                            onDelete={() => removeBlock(block.id)}
+                                            onDuplicate={() => duplicateBlock(block.id)}
+                                            onMoveUp={() => moveBlock(index, index - 1)}
+                                            onMoveDown={() => moveBlock(index, index + 1)}
+                                            canMoveUp={index > 0}
+                                            canMoveDown={index < blocks.length - 1}
+                                        />
+                                    ))}
+                                </SortableContext>
+                            </DndContext>
+                        )}
+                    </div>
+
+                    {/* READ-ONLY FOOTER OVERLAY */}
+                    <div className="mt-auto pointer-events-none opacity-80 relative group">
+                        <StoreFooter store={activeStore || { name: 'Mi Tienda' }} />
+                        <div className="absolute inset-0 bg-[#ff007f]/0 group-hover:bg-[#ff007f]/10 transition-colors flex items-center justify-center cursor-not-allowed pointer-events-auto backdrop-blur-[1px] opacity-0 group-hover:opacity-100" title="El footer se edita desde Configuración">
+                             <span className="bg-black text-white text-[10px] font-bold px-3 py-1.5 rounded-full">Footer Global</span>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
     )
 }
+
 
 function EmptyCanvas({ onAddBlock }: { onAddBlock: any }) {
     return (
