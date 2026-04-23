@@ -75,13 +75,13 @@ function BlockPropsEditor({ block, update }: { block: BuilderBlock; update: (k: 
             return (
                 <>
                     <PropGroup label="Contenido">
-                        <TextField label="Título" value={p.title} onChange={v => update('title', v)} />
-                        <TextField label="Subtítulo" value={p.subtitle} onChange={v => update('subtitle', v)} />
-                        <TextareaField label="Descripción" value={p.description} onChange={v => update('description', v)} />
+                        <TextField label="Título" value={p.title} onChange={(v: string) => update('title', v)} />
+                        <TextField label="Subtítulo" value={p.subtitle} onChange={(v: string) => update('subtitle', v)} />
+                        <TextareaField label="Descripción" value={p.description} onChange={(v: string) => update('description', v)} />
                     </PropGroup>
                     <PropGroup label="Botón Principal">
-                        <TextField label="Texto CTA" value={p.ctaLabel} onChange={v => update('ctaLabel', v)} />
-                        <TextField label="Link" value={p.ctaLink} onChange={v => update('ctaLink', v)} />
+                        <TextField label="Texto CTA" value={p.ctaLabel} onChange={(v: string) => update('ctaLabel', v)} />
+                        <TextField label="Link" value={p.ctaLink} onChange={(v: string) => update('ctaLink', v)} />
                     </PropGroup>
                     <PropGroup label="Fondo">
                         <SelectField
@@ -93,186 +93,317 @@ function BlockPropsEditor({ block, update }: { block: BuilderBlock; update: (k: 
                                 { value: 'video', label: 'Video' },
                                 { value: 'color', label: 'Color sólido' },
                             ]}
-                            onChange={v => update('backgroundType', v)}
+                            onChange={(v: string) => update('backgroundType', v)}
                         />
                         {p.backgroundType === 'video' && (
-                            <TextField label="URL Video" value={p.backgroundVideo} onChange={v => update('backgroundVideo', v)} />
+                            <TextField label="URL Video" value={p.backgroundVideo} onChange={(v: string) => update('backgroundVideo', v)} />
                         )}
                         {p.backgroundType === 'image' && (
-                            <TextField label="URL Imagen" value={p.backgroundImage} onChange={v => update('backgroundImage', v)} />
+                            <TextField label="URL Imagen" value={p.backgroundImage} onChange={(v: string) => update('backgroundImage', v)} />
                         )}
-                        <NumberField label="Opacidad overlay (%)" value={p.overlayOpacity} min={0} max={100} onChange={v => update('overlayOpacity', v)} />
+                        <NumberField label="Opacidad overlay (%)" value={p.overlayOpacity} min={0} max={100} onChange={(v: number) => update('overlayOpacity', v)} />
                     </PropGroup>
                     <PropGroup label="Layout">
-                        <AlignField label="Alineación" value={p.contentAlign} onChange={v => update('contentAlign', v)} />
-                        <NumberField label="Alto mínimo (vh)" value={p.minHeight} min={30} max={100} onChange={v => update('minHeight', v)} />
+                        <AlignField label="Alineación" value={p.contentAlign} onChange={(v: string) => update('contentAlign', v)} />
+                        <NumberField label="Alto mínimo (vh)" value={p.minHeight} min={30} max={100} onChange={(v: number) => update('minHeight', v)} />
                     </PropGroup>
                 </>
+            )
+
+        case 'marquee':
+            return (
+                <>
+                    <PropGroup label="Marquee / Ticker">
+                        <NumberField label="Velocidad (segundos)" value={p.speed} min={5} max={60} onChange={(v: number) => update('speed', v)} />
+                        <TextField label="Separador" value={p.separator} onChange={(v: string) => update('separator', v)} placeholder="Ej: ✦" />
+                        <ColorField label="Color de Fondo" value={p.backgroundColor} onChange={(v: string) => update('backgroundColor', v)} />
+                        <ColorField label="Color de Texto" value={p.textColor} onChange={(v: string) => update('textColor', v)} />
+                    </PropGroup>
+                    <PropGroup label="Anuncios">
+                        <div className="space-y-2">
+                            {p.items?.map((item: string, i: number) => (
+                                <div key={i} className="flex gap-2">
+                                    <input
+                                        value={item}
+                                        onChange={e => {
+                                            const items = [...p.items]; items[i] = e.target.value
+                                            update('items', items)
+                                        }}
+                                        className="flex-1 bg-zinc-900 border border-white/10 rounded px-2 py-1 text-xs text-white uppercase"
+                                    />
+                                    <button onClick={() => update('items', p.items.filter((_: any, j: number) => j !== i))}
+                                        className="text-red-500 text-[10px] hover:text-red-400 px-2 bg-red-500/10 rounded">X</button>
+                                </div>
+                            ))}
+                            <button onClick={() => update('items', [...(p.items || []), 'NUEVO ANUNCIO'])}
+                                className="w-full py-1.5 border border-dashed border-white/20 rounded text-xs text-zinc-400 hover:text-white transition-all">+ Añadir anuncio</button>
+                        </div>
+                    </PropGroup>
+                </>
+            )
+
+        case 'trust-bar':
+            return (
+                <PropGroup label="Barra de Confianza">
+                    <SelectField label="Tipo" value={p.type} options={[{ value: 'press', label: 'Prensa' }, { value: 'stats', label: 'Estadísticas' }, { value: 'logos', label: 'Logos' }]} onChange={(v: string) => update('type', v)} />
+                    <ColorField label="Color de Fondo" value={p.backgroundColor} onChange={(v: string) => update('backgroundColor', v)} />
+                    <div className="mt-4 space-y-2">
+                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-1">Elementos</label>
+                        {p.items?.map((item: any, i: number) => (
+                            <div key={i} className="flex gap-2 bg-zinc-900 border border-white/5 p-2 rounded">
+                                <input
+                                    value={item.label}
+                                    onChange={e => { const items = [...p.items]; items[i].label = e.target.value; update('items', items) }}
+                                    className="flex-1 bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                                    placeholder="Texto o nombre..."
+                                />
+                                <button onClick={() => update('items', p.items.filter((_: any, j: number) => j !== i))} className="text-red-500 text-[10px] hover:text-red-400">X</button>
+                            </div>
+                        ))}
+                        <button onClick={() => update('items', [...(p.items || []), { label: 'Nuevo elemento' }])}
+                            className="w-full py-1.5 border border-dashed border-white/20 rounded text-xs text-zinc-400 hover:text-white transition-all">+ Añadir</button>
+                    </div>
+                </PropGroup>
+            )
+
+        case 'brand-story':
+            return (
+                <>
+                    <PropGroup label="Contenido">
+                        <TextField label="Eyebrow (Texto pequeño)" value={p.eyebrow} onChange={(v: string) => update('eyebrow', v)} />
+                        <TextField label="Título Principal" value={p.title} onChange={(v: string) => update('title', v)} />
+                        <TextareaField label="Texto / Historia" value={p.body} onChange={(v: string) => update('body', v)} />
+                        <TextField label="Botón" value={p.ctaLabel} onChange={(v: string) => update('ctaLabel', v)} />
+                        <TextField label="Link del botón" value={p.ctaLink} onChange={(v: string) => update('ctaLink', v)} />
+                    </PropGroup>
+                    <PropGroup label="Multimedia y Estilos">
+                        <TextField label="URL de Imagen Fija" value={p.image} onChange={(v: string) => update('image', v)} />
+                        <SelectField label="Posición de Imagen" value={p.imagePosition} options={[{ value: 'left', label: 'Izquierda' }, { value: 'right', label: 'Derecha' }]} onChange={(v: string) => update('imagePosition', v)} />
+                        <ColorField label="Color de Fondo" value={p.backgroundColor} onChange={(v: string) => update('backgroundColor', v)} />
+                    </PropGroup>
+                </>
+            )
+
+        case 'newsletter':
+            return (
+                <>
+                    <PropGroup label="Textos">
+                        <TextField label="Título" value={p.title} onChange={(v: string) => update('title', v)} />
+                        <TextareaField label="Descripción corta" value={p.description} onChange={(v: string) => update('description', v)} />
+                        <TextField label="Placeholder del input" value={p.placeholder} onChange={(v: string) => update('placeholder', v)} />
+                        <TextField label="Texto del Botón" value={p.ctaLabel} onChange={(v: string) => update('ctaLabel', v)} />
+                    </PropGroup>
+                    <PropGroup label="Colores">
+                        <ColorField label="Color de Acento" value={p.accentColor} onChange={(v: string) => update('accentColor', v)} />
+                        <ColorField label="Color de Fondo" value={p.backgroundColor} onChange={(v: string) => update('backgroundColor', v)} />
+                    </PropGroup>
+                </>
+            )
+
+        case 'how-it-works':
+            return (
+                <PropGroup label="Cómo Funciona">
+                    <TextField label="Título Principal" value={p.title} onChange={(v: string) => update('title', v)} />
+                    <SelectField label="Diseño" value={p.layout} options={[{ value: 'horizontal', label: 'Horizontal' }, { value: 'vertical', label: 'Vertical' }]} onChange={(v: string) => update('layout', v)} />
+
+                    <div className="mt-4 space-y-2">
+                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-2">Pasos</label>
+                        {p.steps?.map((step: any, i: number) => (
+                            <div key={i} className="bg-zinc-900 border border-white/5 p-3 rounded space-y-2 relative">
+                                <button onClick={() => update('steps', p.steps.filter((_: any, j: number) => j !== i))} className="absolute top-2 right-2 text-red-500 text-[10px] hover:text-red-400">X</button>
+                                <TextField label="Número/Icono" value={step.number} onChange={(v: string) => { const steps = [...p.steps]; steps[i].number = v; update('steps', steps) }} />
+                                <TextField label="Título" value={step.title} onChange={(v: string) => { const steps = [...p.steps]; steps[i].title = v; update('steps', steps) }} />
+                                <TextareaField label="Descripción" value={step.description} onChange={(v: string) => { const steps = [...p.steps]; steps[i].description = v; update('steps', steps) }} />
+                            </div>
+                        ))}
+                        <button onClick={() => update('steps', [...(p.steps || []), { number: '0X', title: 'Nuevo Paso', description: 'Describe este paso.' }])}
+                            className="w-full py-1.5 border border-dashed border-white/20 rounded text-xs text-zinc-400 hover:text-white transition-all">+ Agregar Paso</button>
+                    </div>
+                </PropGroup>
+            )
+
+        case 'location':
+            return (
+                <>
+                    <PropGroup label="Información">
+                        <TextField label="Título Principal" value={p.title} onChange={(v: string) => update('title', v)} />
+                        <TextField label="Dirección" value={p.address} onChange={(v: string) => update('address', v)} />
+                        <div className="grid grid-cols-2 gap-2">
+                            <TextField label="Ciudad" value={p.city} onChange={(v: string) => update('city', v)} />
+                            <TextField label="País" value={p.country} onChange={(v: string) => update('country', v)} />
+                        </div>
+                        <TextField label="Email" value={p.email} onChange={(v: string) => update('email', v)} />
+                        <TextField label="Teléfono" value={p.phone} onChange={(v: string) => update('phone', v)} />
+                    </PropGroup>
+                    <PropGroup label="Diseño y Mapa">
+                        <SelectField label="Diseño" value={p.layout} options={[{ value: 'split', label: 'Dividido (Split)' }, { value: 'minimal', label: 'Minimalista' }]} onChange={(v: string) => update('layout', v)} />
+                        <BooleanField label="Mostrar Mapa" value={p.showMap} onChange={(v: boolean) => update('showMap', v)} />
+                        {p.showMap && <TextField label="URL de Google Maps (Embed)" value={p.mapUrl} onChange={(v: string) => update('mapUrl', v)} />}
+                    </PropGroup>
+                    <PropGroup label="Horarios">
+                        <div className="space-y-2">
+                            {p.hours?.map((item: any, i: number) => (
+                                <div key={i} className="flex gap-2">
+                                    <input value={item.day} onChange={e => { const h = [...p.hours]; h[i].day = e.target.value; update('hours', h) }} className="w-1/3 bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white" placeholder="Día" />
+                                    <input value={item.hours} onChange={e => { const h = [...p.hours]; h[i].hours = e.target.value; update('hours', h) }} className="flex-1 bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white" placeholder="Horario" />
+                                    <button onClick={() => update('hours', p.hours.filter((_: any, j: number) => j !== i))} className="text-red-500 px-1">X</button>
+                                </div>
+                            ))}
+                            <button onClick={() => update('hours', [...(p.hours || []), { day: 'Lunes', hours: '9:00 - 18:00' }])}
+                                className="w-full py-1.5 border border-dashed border-white/20 rounded text-xs text-zinc-400 hover:text-white transition-all">+ Agregar Horario</button>
+                        </div>
+                    </PropGroup>
+                </>
+            )
+
+        case 'card-slider':
+            return (
+                <PropGroup label="Tarjetas / Slider">
+                    <TextField label="Título Slider" value={p.title} onChange={(v: string) => update('title', v)} />
+                    <BooleanField label="Mostrar Flechas" value={p.showArrows} onChange={(v: boolean) => update('showArrows', v)} />
+                    <NumberField label="Ancho de Tarjeta (px)" value={p.cardWidth} min={200} max={600} onChange={(v: number) => update('cardWidth', v)} />
+                    <NumberField label="Espacio (rem)" value={p.gap} min={0} max={8} onChange={(v: number) => update('gap', v)} />
+
+                    <div className="mt-4 space-y-2">
+                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider block mb-2">Tarjetas</label>
+                        {p.cards?.map((card: any, i: number) => (
+                            <div key={i} className="bg-zinc-900 border border-white/5 p-3 rounded space-y-2 relative">
+                                <button onClick={() => update('cards', p.cards.filter((_: any, j: number) => j !== i))} className="absolute top-2 right-2 text-red-500 text-[10px] hover:text-red-400">X</button>
+                                <TextField label="URL de Imagen" value={card.image} onChange={(v: string) => { const c = [...p.cards]; c[i].image = v; update('cards', c) }} />
+                                <TextField label="Título" value={card.title} onChange={(v: string) => { const c = [...p.cards]; c[i].title = v; update('cards', c) }} />
+                                <TextField label="Descripción corta" value={card.description} onChange={(v: string) => { const c = [...p.cards]; c[i].description = v; update('cards', c) }} />
+                            </div>
+                        ))}
+                        <button onClick={() => update('cards', [...(p.cards || []), { image: '', title: 'Nueva Tarjeta', description: 'Detalles...' }])}
+                            className="w-full py-1.5 border border-dashed border-white/20 rounded text-xs text-zinc-400 hover:text-white transition-all">+ Agregar Tarjeta</button>
+                    </div>
+                </PropGroup>
             )
 
         case 'heading':
             return (
                 <PropGroup label="Encabezado">
-                    <TextField label="Texto" value={p.text} onChange={v => update('text', v)} />
-                    <SelectField label="Nivel" value={p.level} options={['h1','h2','h3','h4','h5','h6'].map(v => ({ value: v, label: v.toUpperCase() }))} onChange={v => update('level', v)} />
+                    <TextField label="Texto" value={p.text} onChange={(v: string) => update('text', v)} />
+                    <SelectField label="Nivel" value={p.level} options={['h1','h2','h3','h4','h5','h6'].map(v => ({ value: v, label: v.toUpperCase() }))} onChange={(v: string) => update('level', v)} />
                     <SelectField label="Tamaño" value={p.size} options={[
                         { value: 'sm', label: 'Pequeño' }, { value: 'xl', label: 'Mediano' },
                         { value: '3xl', label: 'Grande' }, { value: '5xl', label: 'Extra Grande' },
                         { value: '8xl', label: 'Gigante' },
-                    ]} onChange={v => update('size', v)} />
-                    <AlignField label="Alineación" value={p.align} onChange={v => update('align', v)} />
-                    <ColorField label="Color" value={p.color} onChange={v => update('color', v)} />
+                    ]} onChange={(v: string) => update('size', v)} />
+                    <AlignField label="Alineación" value={p.align} onChange={(v: string) => update('align', v)} />
+                    <ColorField label="Color" value={p.color} onChange={(v: string) => update('color', v)} />
                     <SelectField label="Estilo" value={p.fontStyle} options={[
                         { value: 'normal', label: 'Normal' }, { value: 'italic', label: 'Itálica' }
-                    ]} onChange={v => update('fontStyle', v)} />
+                    ]} onChange={(v: string) => update('fontStyle', v)} />
                 </PropGroup>
             )
 
         case 'paragraph':
             return (
                 <PropGroup label="Párrafo">
-                    <TextareaField label="Texto" value={p.text} onChange={v => update('text', v)} />
-                    <AlignField label="Alineación" value={p.align} onChange={v => update('align', v)} />
+                    <TextareaField label="Texto" value={p.text} onChange={(v: string) => update('text', v)} />
+                    <AlignField label="Alineación" value={p.align} onChange={(v: string) => update('align', v)} />
                     <SelectField label="Tamaño" value={p.size} options={[
                         { value: 'sm', label: 'Pequeño' }, { value: 'base', label: 'Normal' },
                         { value: 'lg', label: 'Grande' }, { value: 'xl', label: 'Extra Grande' },
-                    ]} onChange={v => update('size', v)} />
-                    <ColorField label="Color" value={p.color} onChange={v => update('color', v)} />
+                    ]} onChange={(v: string) => update('size', v)} />
+                    <ColorField label="Color" value={p.color} onChange={(v: string) => update('color', v)} />
                 </PropGroup>
             )
 
         case 'button':
             return (
                 <PropGroup label="Botón">
-                    <TextField label="Texto" value={p.label} onChange={v => update('label', v)} />
-                    <TextField label="Link" value={p.link} onChange={v => update('link', v)} />
+                    <TextField label="Texto" value={p.label} onChange={(v: string) => update('label', v)} />
+                    <TextField label="Link" value={p.link} onChange={(v: string) => update('link', v)} />
                     <SelectField label="Estilo" value={p.variant} options={[
                         { value: 'primary', label: 'Primario' },
                         { value: 'secondary', label: 'Secundario' },
                         { value: 'outline', label: 'Outline' },
                         { value: 'ghost', label: 'Ghost' },
-                    ]} onChange={v => update('variant', v)} />
+                    ]} onChange={(v: string) => update('variant', v)} />
                     <SelectField label="Tamaño" value={p.size} options={[
                         { value: 'sm', label: 'Pequeño' }, { value: 'md', label: 'Mediano' }, { value: 'lg', label: 'Grande' }
-                    ]} onChange={v => update('size', v)} />
-                    <AlignField label="Alineación" value={p.align} onChange={v => update('align', v)} />
-                    <BooleanField label="Abrir en nueva pestaña" value={p.newTab} onChange={v => update('newTab', v)} />
+                    ]} onChange={(v: string) => update('size', v)} />
+                    <AlignField label="Alineación" value={p.align} onChange={(v: string) => update('align', v)} />
+                    <BooleanField label="Abrir en nueva pestaña" value={p.newTab} onChange={(v: boolean) => update('newTab', v)} />
                 </PropGroup>
             )
 
         case 'image':
             return (
                 <PropGroup label="Imagen">
-                    <TextField label="URL de imagen" value={p.src} onChange={v => update('src', v)} placeholder="https://..." />
-                    <TextField label="Texto alternativo" value={p.alt} onChange={v => update('alt', v)} />
+                    <TextField label="URL de imagen" value={p.src} onChange={(v: string) => update('src', v)} placeholder="https://..." />
+                    <TextField label="Texto alternativo" value={p.alt} onChange={(v: string) => update('alt', v)} />
                     <SelectField label="Ajuste" value={p.fit} options={[
                         { value: 'cover', label: 'Cubrir' }, { value: 'contain', label: 'Contener' },
                         { value: 'fill', label: 'Rellenar' },
-                    ]} onChange={v => update('fit', v)} />
+                    ]} onChange={(v: string) => update('fit', v)} />
                     <SelectField label="Relación de aspecto" value={p.aspectRatio} options={[
                         { value: '16/9', label: '16:9' }, { value: '4/3', label: '4:3' },
                         { value: '1/1', label: '1:1' }, { value: '9/16', label: '9:16 (vertical)' },
                         { value: '3/1', label: '3:1 (banner)' },
-                    ]} onChange={v => update('aspectRatio', v)} />
-                    <TextField label="Link (opcional)" value={p.link} onChange={v => update('link', v)} />
-                    <NumberField label="Border Radius" value={p.borderRadius} min={0} max={48} onChange={v => update('borderRadius', v)} />
+                    ]} onChange={(v: string) => update('aspectRatio', v)} />
+                    <TextField label="Link (opcional)" value={p.link} onChange={(v: string) => update('link', v)} />
+                    <NumberField label="Border Radius" value={p.borderRadius} min={0} max={48} onChange={(v: number) => update('borderRadius', v)} />
                 </PropGroup>
             )
 
         case 'video':
             return (
                 <PropGroup label="Video">
-                    <TextField label="URL de video" value={p.src} onChange={v => update('src', v)} placeholder="https://..." />
+                    <TextField label="URL de video" value={p.src} onChange={(v: string) => update('src', v)} placeholder="https://..." />
                     <SelectField label="Relación de aspecto" value={p.aspectRatio} options={[
                         { value: '16/9', label: '16:9' }, { value: '9/16', label: '9:16 (vertical)' }, { value: '1/1', label: '1:1' }
-                    ]} onChange={v => update('aspectRatio', v)} />
-                    <BooleanField label="Autoplay" value={p.autoplay} onChange={v => update('autoplay', v)} />
-                    <BooleanField label="Sin sonido" value={p.muted} onChange={v => update('muted', v)} />
-                    <BooleanField label="Loop" value={p.loop} onChange={v => update('loop', v)} />
-                    <BooleanField label="Controles" value={p.controls} onChange={v => update('controls', v)} />
+                    ]} onChange={(v: string) => update('aspectRatio', v)} />
+                    <BooleanField label="Autoplay" value={p.autoplay} onChange={(v: boolean) => update('autoplay', v)} />
+                    <BooleanField label="Sin sonido" value={p.muted} onChange={(v: boolean) => update('muted', v)} />
+                    <BooleanField label="Loop" value={p.loop} onChange={(v: boolean) => update('loop', v)} />
+                    <BooleanField label="Controles" value={p.controls} onChange={(v: boolean) => update('controls', v)} />
                 </PropGroup>
-            )
-
-        case 'cta':
-            return (
-                <>
-                    <PropGroup label="Contenido">
-                        <TextField label="Título" value={p.title} onChange={v => update('title', v)} />
-                        <TextareaField label="Descripción" value={p.description} onChange={v => update('description', v)} />
-                        <TextField label="Texto botón" value={p.ctaLabel} onChange={v => update('ctaLabel', v)} />
-                        <TextField label="Link botón" value={p.ctaLink} onChange={v => update('ctaLink', v)} />
-                    </PropGroup>
-                    <PropGroup label="Colores">
-                        <ColorField label="Color de fondo" value={p.backgroundColor} onChange={v => update('backgroundColor', v)} />
-                        <ColorField label="Color acento" value={p.accentColor} onChange={v => update('accentColor', v)} />
-                    </PropGroup>
-                </>
             )
 
         case 'products-grid':
             return (
                 <PropGroup label="Grilla de Productos">
-                    <TextField label="Título" value={p.title} onChange={v => update('title', v)} />
-                    <TextField label="Subtítulo" value={p.subtitle} onChange={v => update('subtitle', v)} />
-                    <NumberField label="Columnas" value={p.columns} min={1} max={4} onChange={v => update('columns', v)} />
-                    <NumberField label="Cantidad de productos" value={p.limit} min={1} max={24} onChange={v => update('limit', v)} />
-                    <BooleanField label="Mostrar precio" value={p.showPrice} onChange={v => update('showPrice', v)} />
-                    <BooleanField label="Botón agregar al carrito" value={p.showAddToCart} onChange={v => update('showAddToCart', v)} />
-                </PropGroup>
-            )
-
-        case 'carousel':
-            return (
-                <PropGroup label="Carousel">
-                    <TextField label="Título" value={p.title} onChange={v => update('title', v)} />
-                    <NumberField label="Slides desktop" value={p.slidesPerView} min={1} max={6} onChange={v => update('slidesPerView', v)} />
-                    <NumberField label="Slides tablet" value={p.slidesPerViewTablet} min={1} max={4} onChange={v => update('slidesPerViewTablet', v)} />
-                    <NumberField label="Slides móvil" value={p.slidesPerViewMobile} min={1} max={2} onChange={v => update('slidesPerViewMobile', v)} />
-                    <BooleanField label="Autoplay" value={p.autoplay} onChange={v => update('autoplay', v)} />
-                    <BooleanField label="Loop" value={p.loop} onChange={v => update('loop', v)} />
-                    <BooleanField label="Mostrar flechas" value={p.showArrows} onChange={v => update('showArrows', v)} />
-                    <BooleanField label="Mostrar puntos" value={p.showDots} onChange={v => update('showDots', v)} />
-                </PropGroup>
-            )
-
-        case 'testimonial':
-            return (
-                <PropGroup label="Testimonial">
-                    <TextareaField label="Cita" value={p.quote} onChange={v => update('quote', v)} />
-                    <TextField label="Autor" value={p.author} onChange={v => update('author', v)} />
-                    <TextField label="Rol" value={p.role} onChange={v => update('role', v)} />
-                    <TextField label="URL Avatar" value={p.avatar} onChange={v => update('avatar', v)} />
-                    <NumberField label="Calificación (1-5)" value={p.rating} min={1} max={5} onChange={v => update('rating', v)} />
+                    <TextField label="Título" value={p.title} onChange={(v: string) => update('title', v)} />
+                    <TextField label="Subtítulo" value={p.subtitle} onChange={(v: string) => update('subtitle', v)} />
+                    <NumberField label="Columnas" value={p.columns} min={1} max={4} onChange={(v: number) => update('columns', v)} />
+                    <NumberField label="Cantidad de productos" value={p.limit} min={1} max={24} onChange={(v: number) => update('limit', v)} />
+                    <BooleanField label="Mostrar precio" value={p.showPrice} onChange={(v: boolean) => update('showPrice', v)} />
+                    <BooleanField label="Botón agregar al carrito" value={p.showAddToCart} onChange={(v: boolean) => update('showAddToCart', v)} />
                 </PropGroup>
             )
 
         case 'divider':
             return (
                 <PropGroup label="Divisor">
-                    <ColorField label="Color" value={p.color} onChange={v => update('color', v)} />
-                    <NumberField label="Grosor (px)" value={p.thickness} min={1} max={8} onChange={v => update('thickness', v)} />
+                    <ColorField label="Color" value={p.color} onChange={(v: string) => update('color', v)} />
+                    <NumberField label="Grosor (px)" value={p.thickness} min={1} max={8} onChange={(v: number) => update('thickness', v)} />
                     <SelectField label="Estilo" value={p.style} options={[
                         { value: 'solid', label: 'Sólido' }, { value: 'dashed', label: 'Punteado' }, { value: 'dotted', label: 'Puntos' }
-                    ]} onChange={v => update('style', v)} />
-                    <NumberField label="Margen vertical (px)" value={p.marginY} min={0} max={128} onChange={v => update('marginY', v)} />
+                    ]} onChange={(v: string) => update('style', v)} />
+                    <NumberField label="Margen vertical (px)" value={p.marginY} min={0} max={128} onChange={(v: number) => update('marginY', v)} />
                 </PropGroup>
             )
 
         case 'faq':
             return (
                 <PropGroup label="FAQ">
-                    <TextField label="Título" value={p.title} onChange={v => update('title', v)} />
-                    <div className="space-y-2">
+                    <TextField label="Título" value={p.title} onChange={(v: string) => update('title', v)} />
+                    <div className="space-y-2 mt-4">
                         <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Preguntas</label>
                         {p.items?.map((item: any, i: number) => (
-                            <div key={i} className="bg-zinc-900 rounded-lg p-3 space-y-2 border border-white/5">
+                            <div key={i} className="bg-zinc-900 rounded-lg p-3 space-y-2 border border-white/5 relative">
+                                <button onClick={() => update('items', p.items.filter((_: any, j: number) => j !== i))}
+                                    className="absolute top-2 right-2 text-red-500 text-[10px] hover:text-red-400">X</button>
                                 <input
                                     value={item.question}
                                     onChange={e => {
                                         const items = [...p.items]; items[i].question = e.target.value
                                         update('items', items)
                                     }}
-                                    className="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white"
+                                    className="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-white pr-6"
                                     placeholder="Pregunta..."
                                 />
                                 <textarea
@@ -284,15 +415,13 @@ function BlockPropsEditor({ block, update }: { block: BuilderBlock; update: (k: 
                                     className="w-full bg-black/50 border border-white/10 rounded px-2 py-1 text-xs text-zinc-300 min-h-[60px] resize-none"
                                     placeholder="Respuesta..."
                                 />
-                                <button onClick={() => { const items = p.items.filter((_: any, j: number) => j !== i); update('items', items) }}
-                                    className="text-red-500 text-[9px] hover:text-red-400">Eliminar</button>
                             </div>
                         ))}
                         <button
-                            onClick={() => update('items', [...(p.items || []), { question: '', answer: '' }])}
-                            className="w-full flex items-center justify-center gap-1 py-2 border border-dashed border-zinc-700 rounded-lg text-xs text-zinc-500 hover:text-white hover:border-zinc-500 transition-all"
+                            onClick={() => update('items', [...(p.items || []), { question: 'Nueva pregunta', answer: 'Respuesta' }])}
+                            className="w-full py-2 border border-dashed border-zinc-700 rounded-lg text-xs text-zinc-500 hover:text-white hover:border-zinc-500 transition-all"
                         >
-                            <Plus className="w-3 h-3" /> Agregar pregunta
+                            + Agregar Pregunta
                         </button>
                     </div>
                 </PropGroup>
