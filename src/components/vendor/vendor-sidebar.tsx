@@ -21,32 +21,37 @@ import {
     Globe,
     ChevronDown,
     ChevronRight,
+    Store,
+    Link as LinkIcon
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const NAV_ITEMS = [
-    // Boutique / Core
-    { href: '/dashboard/vendor', icon: LayoutDashboard, label: 'Command Center', section: 'Boutique' },
-    { href: '/dashboard/vendor/builder', icon: Globe, label: 'Site Studio', section: 'Boutique', iconColor: 'text-[#ff007f]' },
-    { href: '/dashboard/vendor/products', icon: Package, label: 'Inventario', section: 'Boutique' },
-    { href: '/dashboard/vendor/orders', icon: ShoppingBag, label: 'Órdenes', section: 'Boutique' },
-    { href: '/dashboard/vendor/integrations', icon: Zap, label: 'Marketplace Connect', section: 'Boutique', iconColor: 'text-cyan-500' },
+    // Americana Market (Marketplace Default Store Profile)
+    { href: '/dashboard/vendor', icon: LayoutDashboard, label: 'Command Center', section: 'Tienda en Americana' },
+    { href: '/dashboard/vendor/settings', icon: Store, label: 'Store Portal', section: 'Tienda en Americana' },
+    { href: '/dashboard/vendor/products', icon: Package, label: 'Inventario', section: 'Tienda en Americana' },
+    { href: '/dashboard/vendor/orders', icon: ShoppingBag, label: 'Órdenes', section: 'Tienda en Americana' },
 
-    // Visibilidad & Canales (Requested by User)
+    // Expansion DTC / Own Website
+    { href: '/dashboard/vendor/builder', icon: Globe, label: 'Constructor Propio', section: 'Sitio Web DTC', iconColor: 'text-[#ff007f]' },
+    { href: '/dashboard/vendor/domains', icon: LinkIcon, label: 'Dominio Oficial', section: 'Sitio Web DTC', iconColor: 'text-cyan-500' },
+
+    // Backoffice
     {
-        label: 'Visibilidad & Canales',
+        label: 'Visibilidad & SEO',
         icon: Users,
         iconColor: 'text-purple-500',
-        section: 'Crecimiento',
+        section: 'Operaciones',
         subItems: [
-            { label: 'Conexiones (FB, IG, WP)', href: '/dashboard/vendor/marketing/social-hub' },
-            { label: 'Google & SEO Studio', href: '/dashboard/vendor/marketing/seo' },
+            { label: 'SEO Config', href: '/dashboard/vendor/marketing/seo' },
+            { label: 'Social Feed Hub', href: '/dashboard/vendor/marketing/social-hub' },
+            { label: 'Conexión Externa', href: '/dashboard/vendor/integrations' }
         ]
     },
-
-    // Operaciones
-    { href: '/dashboard/chat', icon: MessageSquareIcon, label: 'Mensajes Directos', section: 'Operaciones', iconColor: 'text-[#ff007f]' },
-    { href: '/dashboard/vendor/payments', icon: CreditCard, label: 'Finanzas & Pagos', section: 'Operaciones' },
+    { href: '/dashboard/vendor/shipping', icon: Truck, label: 'Logística & APIs', section: 'Operaciones' },
+    { href: '/dashboard/chat', icon: MessageSquareIcon, label: 'Bandeja Inbox', section: 'Operaciones' },
+    { href: '/dashboard/vendor/payments', icon: CreditCard, label: 'Finanzas', section: 'Operaciones' },
 ]
 
 function MessageSquareIcon({ className }: { className?: string }) {
@@ -76,32 +81,32 @@ export function VendorSidebar() {
             </div>
 
             <nav className="flex-1 px-4 space-y-6">
-                {/* Management */}
+                {/* A. Tienda en Americana */}
                 <div>
-                    <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest pl-4 mb-2">Management</h3>
-                    {NAV_ITEMS.filter(i => i.section === 'Management').map((item: any) => (
+                    <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest pl-4 mb-2">Tienda en el Mall</h3>
+                    {NAV_ITEMS.filter(i => i.section === 'Tienda en Americana').map((item: any) => (
                         <SidebarLink key={item.label} item={item} active={item.href ? isActive(item.href) : false} />
                     ))}
                 </div>
 
-                {/* Marketing & Growth */}
+                {/* B. Sitio Web DTC */}
                 <div>
-                    <h3 className="text-[10px] font-bold text-purple-500 uppercase tracking-widest pl-4 mb-2 flex items-center gap-2">
-                        Marketing & Growth <span className="bg-purple-500/20 text-purple-400 text-[8px] px-1 rounded-sm">NEW</span>
+                    <h3 className="text-[10px] font-bold text-pink-500 uppercase tracking-widest pl-4 mb-2 flex items-center gap-2">
+                        Sitio Propio <span className="bg-pink-500/20 text-pink-400 text-[8px] px-1 rounded-sm">PLUS</span>
                     </h3>
+                    {NAV_ITEMS.filter(i => i.section === 'Sitio Web DTC').map((item: any) => (
+                        <SidebarLink key={item.label} item={item} active={item.href ? isActive(item.href) : false} />
+                    ))}
+                </div>
+
+                {/* C. Operaciones */}
+                <div>
+                    <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest pl-4 mb-2">Operaciones Centrales</h3>
                     <div className="space-y-1">
-                        {NAV_ITEMS.filter(i => i.section === 'Marketing & Growth').map((item: any) => (
+                        {NAV_ITEMS.filter(i => i.section === 'Operaciones').map((item: any) => (
                             <SidebarLink key={item.label} item={item} active={item.href ? isActive(item.href) : false} isAccordion={!!item.subItems} />
                         ))}
                     </div>
-                </div>
-
-                {/* Operations */}
-                <div>
-                    <h3 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest pl-4 mb-2">Operations</h3>
-                    {NAV_ITEMS.filter(i => i.section === 'Operations').map((item: any) => (
-                        <SidebarLink key={item.label} item={item} active={item.href ? isActive(item.href) : false} />
-                    ))}
                 </div>
             </nav>
 
