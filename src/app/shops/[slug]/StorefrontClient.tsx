@@ -25,6 +25,8 @@ import { useCart } from '@/context/cart-context'
 import { MinimalTheme } from '@/components/templates/MinimalTheme'
 import { DarkSocialTheme } from '@/components/templates/DarkSocialTheme'
 import { PageRenderer, parsePageLayout } from '@/components/page-builder/page-renderer'
+import { StoreNavbar } from '@/components/store/store-navbar'
+import { StoreFooter } from '@/components/store/store-footer'
 
 export default function StorefrontClient() {
     const params = useParams()
@@ -205,12 +207,28 @@ export default function StorefrontClient() {
             const layout = parsePageLayout(activeStore.page_layout)
             if (layout) {
                 return (
-                    <PageRenderer
-                        layout={layout}
-                        products={products}
-                        categories={categories}
-                        store={activeStore}
-                    />
+                    <div className="min-h-screen bg-black text-white">
+                        {/* Universal navbar — only for Site Studio pages */}
+                        <StoreNavbar
+                            store={activeStore}
+                            categories={categories}
+                            user={user}
+                        />
+                        {/* Page blocks built in Site Studio */}
+                        <main>
+                            <PageRenderer
+                                layout={layout}
+                                products={products}
+                                categories={categories}
+                                store={activeStore}
+                            />
+                        </main>
+                        {/* Universal footer */}
+                        <StoreFooter
+                            store={activeStore}
+                            categories={categories}
+                        />
+                    </div>
                 )
             }
         }
