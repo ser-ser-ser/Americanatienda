@@ -413,6 +413,51 @@ export default function VendorPortalPage() {
                             </Card>
                         </div>
 
+                        {/* App Integrations */}
+                        <div className="grid grid-cols-1 gap-6">
+                            <Card className="bg-zinc-900 border-zinc-800">
+                                <CardHeader>
+                                    <CardTitle className="text-sm uppercase font-bold tracking-widest text-zinc-400">Integrations</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 bg-zinc-950 rounded-lg border border-zinc-800">
+                                        <div className="flex gap-4 items-center">
+                                            <div className="h-10 w-10 bg-black border border-white/10 rounded-xl flex items-center justify-center shrink-0">
+                                                <Instagram className="h-5 w-5 text-rose-500" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-white">Instagram Active Feed</p>
+                                                <p className="text-xs text-zinc-500">
+                                                    {(activeStore as any)?.instagram_account_id ? `Connected as @${(activeStore as any).instagram_username || 'Business Account'}` : 'Sync your real posts directly to your Store Profile.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        {(activeStore as any)?.instagram_account_id ? (
+                                            <Button variant="outline" className="border-zinc-700 text-red-400 hover:text-red-300 hover:bg-red-500/10">Disconnect</Button>
+                                        ) : (
+                                            <Button 
+                                                onClick={() => {
+                                                    const redirectUri = typeof window !== 'undefined' ? `${window.location.origin}/api/instagram/callback` : '';
+                                                    const clientId = process.env.NEXT_PUBLIC_INSTAGRAM_CLIENT_ID;
+                                                    
+                                                    if (!clientId) {
+                                                        toast.error('Instagram App ID missing. Check platform Configuration.');
+                                                        return;
+                                                    }
+                                                    
+                                                    window.location.href = `https://api.instagram.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user_profile,user_media&response_type=code&state=${activeStore.id}`;
+                                                }}
+                                                variant="outline" 
+                                                className="border-zinc-700 text-white bg-zinc-800 hover:bg-zinc-700 whitespace-nowrap"
+                                            >
+                                                Connect Account
+                                            </Button>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
                     </div>
 
                     {/* RIGHT: Quick Stats / Preview helper (Static for now to mimic Admin Layout) */}

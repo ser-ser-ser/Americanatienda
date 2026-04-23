@@ -2,9 +2,9 @@
 
 import { createClient } from '@/utils/supabase/client'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ShoppingBag, ArrowLeft, MessageCircle, Instagram, MapPin, Clock } from 'lucide-react'
+import { ShoppingBag, ArrowLeft, MessageCircle, Instagram, MapPin, Clock, Video } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Footer } from '@/components/footer'
@@ -34,6 +34,28 @@ export function DarkSocialTheme({ store, products, categories, user }: DarkSocia
     const { cartCount, toggleCart } = useCart()
     const { startInquiryChat } = useChat()
     const [activeCategory, setActiveCategory] = useState<string>('all')
+    
+    // Instagram Dynamic Feed State
+    const [igMedia, setIgMedia] = useState<any[]>([])
+    const [loadingIg, setLoadingIg] = useState(true)
+
+    useEffect(() => {
+        const fetchIg = async () => {
+            if (!store?.id) return
+            try {
+                const res = await fetch(`/api/instagram/feed?store_id=${store.id}`)
+                const data = await res.json()
+                if (data.data) {
+                    setIgMedia(data.data)
+                }
+            } catch (error) {
+                console.error("IG Fetch Error:", error)
+            } finally {
+                setLoadingIg(false)
+            }
+        }
+        fetchIg()
+    }, [store?.id])
 
     const filteredProducts = activeCategory === 'all'
         ? products
@@ -230,35 +252,43 @@ export function DarkSocialTheme({ store, products, categories, user }: DarkSocia
                 </div>
             </section>
 
-            {/* Instagram Grid */}
-            <section className="bg-black py-16 border-t border-white/5 overflow-hidden">
-                <div className="max-w-7xl mx-auto px-6 mb-10 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div>
-                        <h4 className="text-zinc-500 font-bold uppercase tracking-widest text-xs mb-2">Social Feed</h4>
-                        <h3 className="text-2xl font-serif text-white hover:text-rose-500 transition-colors cursor-pointer flex items-center gap-2">
-                            <Instagram className="h-6 w-6" />
-                            {store.instagram_handle ? `@${store.instagram_handle}` : `@${store.slug}`}
-                        </h3>
-                    </div>
-                </div>
-                <div className="flex w-full gap-2 px-2 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4">
-                    {/* Mock Instagram Images */}
-                    {[
-                        'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&h=600&fit=crop',
-                        'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=600&h=600&fit=crop',
-                        'https://images.unsplash.com/photo-1511511450040-677116ff389e?w=600&h=600&fit=crop',
-                        'https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&h=600&fit=crop',
-                        'https://images.unsplash.com/photo-1509319117193-57bab727e09d?w=600&h=600&fit=crop'
-                    ].map((src, i) => (
-                        <div key={i} className="min-w-[280px] w-[280px] h-[340px] md:min-w-[320px] md:w-[320px] md:h-[400px] shrink-0 snap-center relative group cursor-pointer overflow-hidden rounded-xl bg-zinc-900 border border-white/10">
-                            <Image src={src} alt="Instagram Post" fill className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <Instagram className="text-white h-8 w-8" />
-                            </div>
+            {/* Instagram Grid - Only visible if connected or we can show mock for demo */}
+            {(igMedia.length > 0 || loadingIg) && (
+                <section className="bg-black py-16 border-t border-white/5 overflow-hidden">
+                    <div className="max-w-7xl mx-auto px-6 mb-10 text-center md:text-left flex flex-col md:flex-row md:items-end justify-between gap-4">
+                        <div>
+                            <h4 className="text-zinc-500 font-bold uppercase tracking-widest text-xs mb-2">Social Feed</h4>
+                            <h3 className="text-2xl font-serif text-white hover:text-rose-500 transition-colors cursor-pointer flex items-center gap-2">
+                                <Instagram className="h-6 w-6" />
+                                {store.instagram_username ? `@${store.instagram_username}` : (store.instagram_handle ? `@${store.instagram_handle}` : `@${store.slug}`)}
+                            </h3>
                         </div>
-                    ))}
-                </div>
-            </section>
+                    </div>
+                    
+                    <div className="flex w-full gap-2 px-2 overflow-x-auto snap-x snap-mandatory hide-scrollbar pb-4">
+                        {loadingIg ? (
+                            // Skeletons
+                            Array.from({ length: 5 }).map((_, i) => (
+                                <div key={i} className="min-w-[280px] w-[280px] h-[340px] md:min-w-[320px] md:w-[320px] md:h-[400px] shrink-0 relative bg-zinc-900 animate-pulse rounded-xl border border-white/10" />
+                            ))
+                        ) : (
+                            igMedia.map((post) => (
+                                <a href={post.link} target="_blank" rel="noopener noreferrer" key={post.id} className="min-w-[280px] w-[280px] h-[340px] md:min-w-[320px] md:w-[320px] md:h-[400px] shrink-0 snap-center relative group cursor-pointer overflow-hidden rounded-xl bg-zinc-900 border border-white/10 block">
+                                    <Image src={post.url} alt="Instagram Post" fill className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out" />
+                                    {post.type === 'VIDEO' && (
+                                        <div className="absolute top-4 right-4 bg-black/60 rounded-full p-1 border border-white/20">
+                                            <Video className="h-4 w-4 text-white" />
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <Instagram className="text-white h-8 w-8" />
+                                    </div>
+                                </a>
+                            ))
+                        )}
+                    </div>
+                </section>
+            )}
 
             {/* Store Locator (Map) */}
             <section className="bg-zinc-950 py-24 border-t border-white/5">
