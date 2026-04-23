@@ -75,6 +75,7 @@ const NAV_GROUPS = [
         label: 'CONTENT',
         iconColor: 'text-amber-500',
         items: [
+            { href: '/dashboard/admin/cms/builder', icon: Layout, label: 'Site Studio 🛠️' },
             { href: '/dashboard/admin/cms', icon: Layout, label: 'Visual CMS' },
             { href: '/dashboard/admin/editorial', icon: BookOpen, label: 'Editorial' },
             { href: '/dashboard/admin/club', icon: Crown, label: 'The Club' },

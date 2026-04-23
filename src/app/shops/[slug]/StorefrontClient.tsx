@@ -24,6 +24,7 @@ import {
 import { useCart } from '@/context/cart-context'
 import { MinimalTheme } from '@/components/templates/MinimalTheme'
 import { DarkSocialTheme } from '@/components/templates/DarkSocialTheme'
+import { PageRenderer, parsePageLayout } from '@/components/page-builder/page-renderer'
 
 export default function StorefrontClient() {
     const params = useParams()
@@ -199,15 +200,28 @@ export default function StorefrontClient() {
 
     // --- 4. RENDER TEMPLATE ---
     const renderTemplate = () => {
+        // ✨ SITE STUDIO FIRST: If store has a page_layout from the builder, use it
+        if (activeStore.page_layout) {
+            const layout = parsePageLayout(activeStore.page_layout)
+            if (layout) {
+                return (
+                    <PageRenderer
+                        layout={layout}
+                        products={products}
+                        categories={categories}
+                        store={activeStore}
+                    />
+                )
+            }
+        }
+
         // A) Minimal Theme
         if (activeTemplate?.config?.component_key === 'minimal') {
             return <MinimalTheme store={activeStore} products={products} />
         }
 
         // B) Dark Social / Default / Legacy
-        // If key is 'dark_social' OR activeTemplate is null (Original/Fallback behavior)
         if (activeTemplate?.config?.component_key === 'dark_social' || !activeTemplate) {
-            // Pass necessary props for the Legacy Theme
             return (
                 <DarkSocialTheme
                     store={activeStore}
@@ -218,10 +232,10 @@ export default function StorefrontClient() {
             )
         }
 
-        // C) Future Components (Boutique, etc.) -> Fallback to Dark Social for now or Null
+        // C) Fallback
         return (
             <div className="flex items-center justify-center min-h-screen bg-black text-white">
-                <p>Template component not found: {activeTemplate?.config?.component_key}</p>
+                <p>Template not found: {activeTemplate?.config?.component_key}</p>
             </div>
         )
     }
