@@ -5,16 +5,16 @@ import { BuilderToolbar } from '@/components/page-builder/builder-toolbar'
 import { BuilderSidebar } from '@/components/page-builder/builder-sidebar'
 import { BuilderCanvas } from '@/components/page-builder/builder-canvas'
 import { BuilderProperties } from '@/components/page-builder/builder-properties'
+import { BlockRenderer } from '@/components/page-builder/block-renderer'
 import { createClient } from '@/utils/supabase/client'
 import { useVendor } from '@/providers/vendor-provider'
 import { toast } from 'sonner'
 import { PageLayout, BLOCK_LIBRARY, PageTemplate, DEFAULT_THEMES } from '@/types/builder'
-import { Loader2, LayoutTemplate, ArrowRight, Zap } from 'lucide-react'
+import { Loader2, LayoutTemplate, ArrowRight, Zap, Eye, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ─────────────────────────────────────────────────────────────
 // Vendor Templates — DTC e-commerce architecture
-// Inspired by: Mejuri, Glossier, Everlane, Supreme, Casper
 // ─────────────────────────────────────────────────────────────
 const VENDOR_TEMPLATES: PageTemplate[] = [
     {
@@ -43,7 +43,7 @@ const VENDOR_TEMPLATES: PageTemplate[] = [
         category: 'store',
         theme: DEFAULT_THEMES.boutique,
         blocks: [
-            { id: 'bt-hero', type: 'hero', props: { title: 'Boutique', subtitle: 'Elegancia atemporal. Piezas para durar.', backgroundType: 'image', ctaLabel: 'Explorar Colección', ctaLink: '#coleccion', minHeight: 90, overlayOpacity: 45, contentAlign: 'left' } },
+            { id: 'bt-hero', type: 'hero', props: { title: 'Boutique', subtitle: 'Elegancia atemporal. Piezas para durar.', backgroundType: 'gradient', ctaLabel: 'Explorar Colección', ctaLink: '#coleccion', minHeight: 90, overlayOpacity: 45, contentAlign: 'left' } },
             { id: 'bt-marquee', type: 'marquee', props: { items: ['Nueva colección disponible', 'Envío a toda México', 'Materiales sustentables', 'Hecho a mano'], speed: 35, separator: '·', backgroundColor: '#c9a96e', textColor: '#1a1a1a' } },
             { id: 'bt-quote', type: 'quote', props: { text: '"La moda pasa, el estilo permanece."', author: '— Coco Chanel', align: 'center' } },
             { id: 'bt-products', type: 'products-grid', props: { title: 'Nuestra Colección', subtitle: 'Piezas selectas', columns: 2, limit: 4, showPrice: true, showAddToCart: true } },
@@ -93,7 +93,7 @@ const VENDOR_TEMPLATES: PageTemplate[] = [
 ]
 
 // ─────────────────────────────────────────────────────────────
-// Template visual cards
+// Template visual metadata
 // ─────────────────────────────────────────────────────────────
 const TEMPLATE_VISUALS: Record<string, { bg: string; accent: string; lines: string[] }> = {
     'dark-social': { bg: '#0a0a0a', accent: '#ff007f', lines: ['Hero Video', 'Marquee', 'Bestsellers', 'Brand Story', 'Newsletter'] },
@@ -102,12 +102,25 @@ const TEMPLATE_VISUALS: Record<string, { bg: string; accent: string; lines: stri
     'brutalist':   { bg: '#000000', accent: '#ff007f', lines: ['BIG TYPE', 'DROP', 'Stock', 'Manifesto'] },
 }
 
+const BLOCK_LABELS: Record<string, string> = {
+    hero: '🎯 Hero', marquee: '📢 Marquee', 'trust-bar': '🛡️ Trust Bar',
+    'products-grid': '🛍️ Productos', 'brand-story': '📖 Brand Story',
+    video: '🎬 Video', testimonial: '💬 Reseña', newsletter: '✉️ Newsletter',
+    location: '📍 Ubicación', quote: '" Cita', 'how-it-works': '🔢 Proceso',
+    faq: '❓ FAQ', heading: 'H1 Título', 'card-slider': '🃏 Slider',
+    'categories-grid': '🗂️ Categorías', divider: '— Divisor',
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main page
+// ─────────────────────────────────────────────────────────────
 export default function VendorBuilderPage() {
     const supabase = createClient()
     const { activeStore, isLoading } = useVendor()
     const { loadLayout, getLayout, selectBlock } = useBuilderStore()
     const [loading, setLoading] = React.useState(true)
     const [showTemplates, setShowTemplates] = React.useState(false)
+    const [previewTemplate, setPreviewTemplate] = React.useState<PageTemplate | null>(null)
 
     useEffect(() => {
         if (!activeStore) return
@@ -118,7 +131,6 @@ export default function VendorBuilderPage() {
                     .select('page_layout')
                     .eq('id', activeStore.id)
                     .single()
-
                 if (data?.page_layout) {
                     loadLayout(JSON.parse(typeof data.page_layout === 'string' ? data.page_layout : JSON.stringify(data.page_layout)))
                 } else {
@@ -149,6 +161,7 @@ export default function VendorBuilderPage() {
     const applyTemplate = (template: PageTemplate) => {
         loadLayout({ version: 1, blocks: template.blocks, theme: template.theme })
         setShowTemplates(false)
+        setPreviewTemplate(null)
     }
 
     if (isLoading || loading) {
@@ -159,88 +172,92 @@ export default function VendorBuilderPage() {
         )
     }
 
-    // ── Template picker ──────────────────────────────────────
     if (showTemplates) {
         return (
-            <div className="min-h-screen bg-[#080808] text-white flex flex-col items-center justify-center p-8">
-                <div className="text-center mb-12">
-                    <div className="w-12 h-12 bg-[#ff007f]/10 border border-[#ff007f]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Zap className="w-6 h-6 text-[#ff007f]" />
+            <>
+                {/* ── Template Grid ── */}
+                <div className="min-h-screen bg-[#080808] text-white flex flex-col items-center justify-center p-8">
+                    <div className="text-center mb-12">
+                        <div className="w-12 h-12 bg-[#ff007f]/10 border border-[#ff007f]/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <Zap className="w-6 h-6 text-[#ff007f]" />
+                        </div>
+                        <h1 className="text-4xl font-serif font-bold mb-3">Elige tu plantilla</h1>
+                        <p className="text-zinc-500 text-sm max-w-md mx-auto">
+                            Arquitecturas probadas por marcas DTC exitosas. Previsualiza antes de elegir.
+                        </p>
                     </div>
-                    <h1 className="text-4xl font-serif font-bold mb-3">Elige tu plantilla</h1>
-                    <p className="text-zinc-500 text-sm max-w-md mx-auto">
-                        Cada plantilla es una arquitectura probada por marcas exitosas. Personaliza todo desde el editor.
-                    </p>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl w-full">
-                    {VENDOR_TEMPLATES.map(tpl => {
-                        const vis = TEMPLATE_VISUALS[tpl.id]
-                        return (
-                            <button
-                                key={tpl.id}
-                                onClick={() => applyTemplate(tpl)}
-                                className="group text-left relative overflow-hidden rounded-2xl border border-white/5 hover:border-white/20 transition-all duration-300 hover:-translate-y-1"
-                                style={{ background: vis.bg }}
-                            >
-                                {/* Visual mock of page structure */}
-                                <div className="aspect-[3/4] p-4 flex flex-col gap-2 relative overflow-hidden">
-                                    {/* Accent strip */}
-                                    <div className="h-1 rounded-full mb-1 w-1/2" style={{ backgroundColor: vis.accent }} />
-                                    {/* Mock sections */}
-                                    {vis.lines.map((line, i) => (
-                                        <div key={i} className="flex items-center gap-2">
-                                            <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: i === 0 ? vis.accent : '#333' }} />
-                                            <div
-                                                className="h-2 rounded-full flex-1"
-                                                style={{
-                                                    backgroundColor: i === 0 ? vis.accent + '30' : '#1a1a1a',
-                                                    width: `${70 - i * 10}%`,
-                                                    maxWidth: '90%'
-                                                }}
-                                            />
-                                        </div>
-                                    ))}
-                                    {/* Big accent text */}
-                                    <div className="absolute bottom-4 right-4 text-5xl font-black opacity-5" style={{ color: vis.accent }}>
-                                        {tpl.name[0]}
-                                    </div>
-                                    {/* Hover overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                                        <div className="flex items-center gap-1.5 font-bold text-white text-xs bg-white/10 backdrop-blur px-3 py-1.5 rounded-full border border-white/20">
-                                            Usar plantilla <ArrowRight className="w-3 h-3" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="p-4 border-t border-white/5">
-                                    <h3 className="text-white font-bold text-sm mb-0.5 group-hover:text-white" style={{ '--accent': vis.accent } as any}>
-                                        {tpl.name}
-                                    </h3>
-                                    <p className="text-zinc-600 text-[11px] leading-relaxed">{tpl.description}</p>
-                                    <div className="flex flex-wrap gap-1 mt-2">
-                                        {vis.lines.slice(0, 3).map((l, i) => (
-                                            <span key={i} className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ backgroundColor: vis.accent + '15', color: vis.accent }}>
-                                                {l}
-                                            </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl w-full">
+                        {VENDOR_TEMPLATES.map(tpl => {
+                            const vis = TEMPLATE_VISUALS[tpl.id]
+                            return (
+                                <div
+                                    key={tpl.id}
+                                    className="group text-left relative overflow-hidden rounded-2xl border border-white/5 hover:border-white/20 transition-all duration-300 hover:-translate-y-1"
+                                    style={{ background: vis.bg }}
+                                >
+                                    {/* Wire-frame mock */}
+                                    <div className="aspect-[3/4] p-4 flex flex-col gap-2 relative overflow-hidden">
+                                        <div className="h-1 rounded-full mb-1 w-1/2" style={{ backgroundColor: vis.accent }} />
+                                        {vis.lines.map((line, i) => (
+                                            <div key={i} className="flex items-center gap-2">
+                                                <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: i === 0 ? vis.accent : '#333' }} />
+                                                <div className="h-2 rounded-full" style={{ backgroundColor: i === 0 ? vis.accent + '30' : '#1a1a1a', width: `${75 - i * 10}%` }} />
+                                            </div>
                                         ))}
+                                        <div className="absolute bottom-4 right-4 text-5xl font-black opacity-5" style={{ color: vis.accent }}>
+                                            {tpl.name[0]}
+                                        </div>
+
+                                        {/* Hover: 2 buttons */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col items-center justify-end gap-2 p-4">
+                                            <button
+                                                onClick={() => applyTemplate(tpl)}
+                                                className="w-full flex items-center justify-center gap-1.5 font-bold text-black text-xs bg-white px-3 py-2.5 rounded-xl hover:bg-zinc-100 transition-all"
+                                            >
+                                                <ArrowRight className="w-3 h-3" /> Usar plantilla
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setPreviewTemplate(tpl) }}
+                                                className="w-full flex items-center justify-center gap-1.5 font-bold text-white text-xs bg-white/10 backdrop-blur border border-white/20 px-3 py-2 rounded-xl hover:bg-white/20 transition-all"
+                                            >
+                                                <Eye className="w-3 h-3" /> Vista previa
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-4 border-t border-white/5">
+                                        <h3 className="text-white font-bold text-sm mb-0.5">{tpl.name}</h3>
+                                        <p className="text-zinc-600 text-[11px] leading-relaxed">{tpl.description}</p>
+                                        <div className="flex flex-wrap gap-1 mt-2">
+                                            {vis.lines.slice(0, 3).map((l, i) => (
+                                                <span key={i} className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ backgroundColor: vis.accent + '15', color: vis.accent }}>
+                                                    {l}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </button>
-                        )
-                    })}
+                            )
+                        })}
+                    </div>
+                    <p className="text-zinc-700 text-xs mt-10">Puedes cambiar de plantilla en cualquier momento desde el editor.</p>
                 </div>
 
-                <p className="text-zinc-700 text-xs mt-10">Puedes cambiar de plantilla en cualquier momento.</p>
-            </div>
+                {/* ── Preview Modal ── */}
+                {previewTemplate && (
+                    <TemplatePreviewModal
+                        template={previewTemplate}
+                        onClose={() => setPreviewTemplate(null)}
+                        onUse={() => applyTemplate(previewTemplate)}
+                    />
+                )}
+            </>
         )
     }
 
     return (
-        <div
-            className="h-screen flex flex-col bg-[#0a0a0a] overflow-hidden"
-            onClick={() => selectBlock(null)}
-        >
+        <div className="h-screen flex flex-col bg-[#0a0a0a] overflow-hidden" onClick={() => selectBlock(null)}>
             <BuilderToolbar
                 title={`Site Studio — ${activeStore?.name || 'Mi Tienda'}`}
                 backHref="/dashboard/vendor/settings"
@@ -251,6 +268,102 @@ export default function VendorBuilderPage() {
                 <BuilderSidebar />
                 <BuilderCanvas />
                 <BuilderProperties />
+            </div>
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Template Preview Modal — full screen preview before commit
+// ─────────────────────────────────────────────────────────────
+function TemplatePreviewModal({
+    template,
+    onClose,
+    onUse,
+}: {
+    template: PageTemplate
+    onClose: () => void
+    onUse: () => void
+}) {
+    const vis = TEMPLATE_VISUALS[template.id]
+
+    React.useEffect(() => {
+        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+        window.addEventListener('keydown', handler)
+        return () => window.removeEventListener('keydown', handler)
+    }, [onClose])
+
+    return (
+        <div className="fixed inset-0 z-[200] flex flex-col bg-[#080808]">
+            {/* Toolbar */}
+            <div className="flex-shrink-0 h-12 flex items-center justify-between px-6 border-b border-white/5 bg-[#0a0a0a]">
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={onClose}
+                        className="flex items-center gap-1.5 text-zinc-500 hover:text-white transition-colors text-xs font-bold"
+                    >
+                        <X className="w-4 h-4" /> Cerrar
+                    </button>
+                    <div className="w-px h-4 bg-white/10" />
+                    <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: vis?.accent }} />
+                        <span className="text-white text-sm font-bold">{template.name}</span>
+                        <span className="text-zinc-600 text-xs">— Vista previa</span>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <span className="text-zinc-600 text-xs hidden md:block">{template.blocks.length} secciones</span>
+                    <button
+                        onClick={onUse}
+                        className="flex items-center gap-2 bg-[#ff007f] text-white font-bold px-5 py-2 rounded-full text-sm hover:bg-[#d6006b] transition-all"
+                        style={vis?.accent !== '#ff007f' ? { backgroundColor: vis?.accent, color: '#000' } : {}}
+                    >
+                        <ArrowRight className="w-4 h-4" /> Usar esta plantilla
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex flex-1 overflow-hidden">
+                {/* Section index sidebar */}
+                <div className="w-48 flex-shrink-0 border-r border-white/5 overflow-y-auto py-4 px-3 hidden md:flex md:flex-col">
+                    <p className="text-[9px] font-black text-zinc-600 uppercase tracking-widest mb-3 px-2">Secciones</p>
+                    <div className="space-y-0.5 flex-1">
+                        {template.blocks.map((block, i) => (
+                            <div key={block.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-colors">
+                                <span className="text-[9px] text-zinc-700 font-mono w-4">{i + 1}</span>
+                                <span className="text-[10px] font-medium truncate">
+                                    {BLOCK_LABELS[block.type] || block.type}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-white/5">
+                        <button
+                            onClick={onUse}
+                            className="w-full py-2.5 rounded-xl font-bold text-xs transition-all"
+                            style={{ backgroundColor: vis?.accent, color: vis?.accent === '#ffffff' ? '#000' : '#fff' }}
+                        >
+                            Usar plantilla
+                        </button>
+                    </div>
+                </div>
+
+                {/* Rendered preview */}
+                <div className="flex-1 overflow-y-auto bg-black">
+                    {template.blocks.map((block) => (
+                        <BlockRenderer key={block.id} block={block} isEditing={false} />
+                    ))}
+                    <div className="py-16 text-center border-t border-white/5">
+                        <p className="text-zinc-600 text-sm mb-4">¿Te gusta esta plantilla?</p>
+                        <button
+                            onClick={onUse}
+                            className="font-bold px-8 py-4 rounded-full text-white transition-all hover:opacity-90"
+                            style={{ backgroundColor: vis?.accent, color: vis?.accent === '#ffffff' ? '#000' : '#fff' }}
+                        >
+                            Usar esta plantilla →
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     )
