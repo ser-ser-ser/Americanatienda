@@ -61,6 +61,12 @@ function BlockSwitch({ block, isEditing }: { block: BuilderBlock; isEditing: boo
         case 'social-proof': return <SocialProofBlock p={p} />
         case 'quote': return <QuoteBlock p={p} />
         case 'avatar': return <AvatarBlock p={p} />
+        case 'location': return <LocationBlock p={p} />
+        case 'newsletter': return <NewsletterBlock p={p} />
+        case 'trust-bar': return <TrustBarBlock p={p} />
+        case 'marquee': return <MarqueeBlock p={p} />
+        case 'brand-story': return <BrandStoryBlock p={p} />
+        case 'how-it-works': return <HowItWorksBlock p={p} />
         default:
             return (
                 <div className="p-8 text-center text-zinc-600 border border-dashed border-zinc-800 text-sm">
@@ -596,5 +602,246 @@ function ColumnsBlock({ p }: any) {
                 ))}
             </div>
         </div>
+    )
+}
+
+// ══════════════════════════════════════════════════════════════
+// DTC BRAND BLOCKS — Location, Newsletter, TrustBar, Marquee,
+//                     BrandStory, HowItWorks
+// ══════════════════════════════════════════════════════════════
+
+function LocationBlock({ p }: any) {
+    return (
+        <section className="py-20 px-6" style={{ backgroundColor: '#0a0a0a' }}>
+            <div className="max-w-5xl mx-auto">
+                {p.title && <h2 className="text-3xl font-serif font-bold text-white mb-12">{p.title}</h2>}
+
+                <div className={cn('gap-12', p.layout === 'split' ? 'grid md:grid-cols-2' : 'max-w-lg')}>
+                    {/* Info */}
+                    <div className="space-y-6">
+                        {p.address && (
+                            <div>
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Dirección</p>
+                                <p className="text-white font-medium">{p.address}</p>
+                                {(p.city || p.country) && <p className="text-zinc-400 text-sm">{[p.city, p.country].filter(Boolean).join(', ')}</p>}
+                            </div>
+                        )}
+                        {p.phone && (
+                            <div>
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Teléfono</p>
+                                <a href={`tel:${p.phone}`} className="text-white hover:text-[#ff007f] transition-colors font-medium">{p.phone}</a>
+                            </div>
+                        )}
+                        {p.email && (
+                            <div>
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1">Email</p>
+                                <a href={`mailto:${p.email}`} className="text-white hover:text-[#ff007f] transition-colors font-medium">{p.email}</a>
+                            </div>
+                        )}
+                        {p.hours?.length > 0 && (
+                            <div>
+                                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-3">Horarios</p>
+                                <div className="space-y-1">
+                                    {p.hours.map((h: any, i: number) => (
+                                        <div key={i} className="flex justify-between text-sm">
+                                            <span className="text-zinc-400">{h.day}</span>
+                                            <span className="text-white font-medium">{h.hours}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Map or placeholder */}
+                    {p.layout === 'split' && (
+                        <div className="aspect-square md:aspect-auto bg-zinc-900 rounded-2xl border border-white/5 flex items-center justify-center overflow-hidden">
+                            {p.showMap && p.mapEmbedUrl ? (
+                                <iframe src={p.mapEmbedUrl} className="w-full h-full border-0" allowFullScreen />
+                            ) : (
+                                <div className="text-center text-zinc-700">
+                                    <div className="text-5xl mb-3">📍</div>
+                                    <p className="text-xs font-bold uppercase tracking-widest">Agéga un mapa en propiedades</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </section>
+    )
+}
+
+function NewsletterBlock({ p }: any) {
+    const [email, setEmail] = React.useState('')
+    const [sent, setSent] = React.useState(false)
+
+    return (
+        <section className="py-20 px-6" style={{ backgroundColor: p.backgroundColor || '#0a0a0a' }}>
+            <div className={cn('max-w-2xl mx-auto', p.align === 'center' && 'text-center')}>
+                {p.title && <h2 className="text-3xl md:text-4xl font-serif font-bold text-white mb-3">{p.title}</h2>}
+                {p.description && <p className="text-zinc-400 mb-8 leading-relaxed">{p.description}</p>}
+
+                {sent ? (
+                    <div className="bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-white font-medium">
+                        ✓ {p.successMessage || '¡Suscrito correctamente!'}
+                    </div>
+                ) : (
+                    <div className="flex gap-3 max-w-md" style={{ margin: p.align === 'center' ? '0 auto' : undefined }}>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={e => setEmail(e.target.value)}
+                            placeholder={p.placeholder || 'tu@email.com'}
+                            className="flex-1 bg-zinc-900 border border-white/10 rounded-full px-5 py-3 text-white placeholder:text-zinc-600 text-sm focus:outline-none focus:border-white/30"
+                        />
+                        <button
+                            onClick={() => email && setSent(true)}
+                            className="px-6 py-3 rounded-full font-bold text-sm text-white transition-all hover:opacity-90 flex-shrink-0"
+                            style={{ backgroundColor: p.accentColor || '#ff007f' }}
+                        >
+                            {p.ctaLabel || 'Suscribir'}
+                        </button>
+                    </div>
+                )}
+            </div>
+        </section>
+    )
+}
+
+function TrustBarBlock({ p }: any) {
+    return (
+        <div className="py-8 px-6 border-y border-white/5" style={{ backgroundColor: p.backgroundColor || '#111' }}>
+            <div className="max-w-5xl mx-auto flex flex-wrap justify-center items-center gap-8 md:gap-16">
+                {p.items?.map((item: any, i: number) => (
+                    <div key={i} className="flex flex-col items-center gap-1">
+                        {item.value && <span className="text-2xl font-black text-white">{item.value}</span>}
+                        <span className="text-sm font-bold text-zinc-400 tracking-tight">{item.label}</span>
+                    </div>
+                ))}
+                {(!p.items || p.items.length === 0) && (
+                    <p className="text-zinc-700 text-xs">Agrega menciones de prensa o stats en propiedades</p>
+                )}
+            </div>
+        </div>
+    )
+}
+
+function MarqueeBlock({ p }: any) {
+    const items = p.items || []
+    const speed = p.speed || 30
+    const sep = p.separator || '✦'
+
+    // Duplicate items for seamless loop
+    const allItems = [...items, ...items]
+
+    return (
+        <div
+            className="overflow-hidden py-3"
+            style={{ backgroundColor: p.backgroundColor || '#ff007f' }}
+        >
+            <div
+                className="flex whitespace-nowrap"
+                style={{
+                    animation: `marquee ${speed}s linear infinite`,
+                    willChange: 'transform',
+                }}
+            >
+                {allItems.map((item: string, i: number) => (
+                    <span
+                        key={i}
+                        className={cn('font-bold uppercase tracking-wider flex-shrink-0 px-6',
+                            p.fontSize === 'sm' ? 'text-sm' : p.fontSize === 'lg' ? 'text-lg' : 'text-base'
+                        )}
+                        style={{ color: p.textColor || '#ffffff' }}
+                    >
+                        {item} <span className="opacity-60 mx-2">{sep}</span>
+                    </span>
+                ))}
+            </div>
+            <style global jsx>{`
+                @keyframes marquee {
+                    from { transform: translateX(0); }
+                    to { transform: translateX(-50%); }
+                }
+            `}</style>
+        </div>
+    )
+}
+
+function BrandStoryBlock({ p }: any) {
+    const isRight = p.imagePosition !== 'left'
+    return (
+        <section className="py-20 px-6" style={{ backgroundColor: p.backgroundColor || '#0a0a0a' }}>
+            <div className={cn(
+                'max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center',
+                !isRight && 'md:[&>*:first-child]:order-2'
+            )}>
+                {/* Text */}
+                <div>
+                    {p.eyebrow && <p className="text-[#ff007f] text-xs font-black uppercase tracking-widest mb-3">{p.eyebrow}</p>}
+                    {p.title && <h2 className="text-3xl md:text-4xl font-serif font-bold text-white mb-6 leading-tight">{p.title}</h2>}
+                    {p.body && <p className="text-zinc-400 leading-relaxed mb-8 text-lg">{p.body}</p>}
+                    {p.ctaLabel && (
+                        <Link href={p.ctaLink || '#'}>
+                            <button className="border border-white/20 text-white font-bold px-6 py-3 rounded-full hover:bg-white hover:text-black transition-all text-sm">
+                                {p.ctaLabel} →
+                            </button>
+                        </Link>
+                    )}
+                </div>
+
+                {/* Image */}
+                <div className="aspect-[4/5] bg-zinc-900 rounded-2xl overflow-hidden border border-white/5">
+                    {p.image ? (
+                        <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-zinc-700">
+                            <div className="text-center">
+                                <div className="text-4xl mb-2">📖</div>
+                                <p className="text-xs font-bold uppercase tracking-widest">Agrega tu imagen en propiedades</p>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </section>
+    )
+}
+
+function HowItWorksBlock({ p }: any) {
+    const isHorizontal = p.layout !== 'vertical'
+    return (
+        <section className="py-20 px-6 bg-[#050505]">
+            <div className="max-w-5xl mx-auto">
+                {p.title && <h2 className="text-3xl font-serif font-bold text-white mb-12 text-center">{p.title}</h2>}
+                <div className={cn(
+                    'gap-8',
+                    isHorizontal ? 'grid md:grid-cols-3' : 'flex flex-col max-w-lg mx-auto'
+                )}>
+                    {p.steps?.map((step: any, i: number) => (
+                        <div key={i} className={cn('relative', !isHorizontal && 'flex gap-6')}>
+                            {/* Number */}
+                            <div className={cn(
+                                'font-black text-5xl text-white/5 mb-4 leading-none',
+                                !isHorizontal && 'text-3xl flex-shrink-0 w-12'
+                            )}
+                                style={{ fontVariantNumeric: 'tabular-nums' }}
+                            >
+                                {step.number}
+                            </div>
+                            <div>
+                                {step.title && <h3 className="text-white font-bold text-lg mb-2">{step.title}</h3>}
+                                {step.description && <p className="text-zinc-500 text-sm leading-relaxed">{step.description}</p>}
+                            </div>
+                            {/* Connector line for horizontal */}
+                            {isHorizontal && i < (p.steps.length - 1) && (
+                                <div className="hidden md:block absolute top-6 left-full w-8 h-px bg-white/10 -translate-x-4" />
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
     )
 }

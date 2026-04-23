@@ -24,11 +24,13 @@ export type BlockType =
     | 'carousel' | 'card-slider'
     // Social
     | 'social-proof'
+    // DTC / Brand Builders
+    | 'location' | 'newsletter' | 'trust-bar' | 'marquee' | 'brand-story' | 'how-it-works'
 
 // ── Block category for the sidebar ──────────────────────────
 export type BlockCategory =
     | 'layout' | 'text' | 'media' | 'forms'
-    | 'navigation' | 'marketing' | 'ecommerce' | 'effects'
+    | 'navigation' | 'marketing' | 'ecommerce' | 'effects' | 'brand'
 
 export interface BlockDefinition {
     type: BlockType
@@ -278,7 +280,114 @@ export const BLOCK_LIBRARY: BlockDefinition[] = [
             align: 'center',
         },
     },
-    // ── MARKETING ────────────────────────────────────────────
+    // ── BRAND / DTC ──────────────────────────────────────────
+    {
+        type: 'location',
+        label: 'Ubicación',
+        icon: 'MapPin',
+        category: 'brand',
+        description: 'Dirección, mapa y horarios de tu tienda',
+        defaultProps: {
+            title: 'Encuéntranos',
+            address: 'Calle Ejemplo 123, Ciudad de México',
+            city: 'Ciudad de México',
+            country: 'México',
+            phone: '+52 55 0000 0000',
+            email: 'hola@tutienda.com',
+            hours: [
+                { day: 'Lunes – Viernes', hours: '10:00 – 19:00' },
+                { day: 'Sábado', hours: '11:00 – 17:00' },
+                { day: 'Domingo', hours: 'Cerrado' },
+            ],
+            mapEmbedUrl: '',
+            showMap: false,
+            layout: 'split', // split | centered | minimal
+        },
+    },
+    {
+        type: 'newsletter',
+        label: 'Newsletter',
+        icon: 'Mail',
+        category: 'brand',
+        description: 'Captura de emails con campo de suscripción',
+        defaultProps: {
+            title: 'Únete a la comunidad',
+            description: 'Recibe drops exclusivos, descuentos y contenido antes que nadie.',
+            placeholder: 'tu@email.com',
+            ctaLabel: 'Suscribirme',
+            successMessage: '¡Bienvenido/a! Revisa tu bandeja de entrada.',
+            backgroundColor: '#0a0a0a',
+            accentColor: '#ff007f',
+            align: 'center',
+        },
+    },
+    {
+        type: 'trust-bar',
+        label: 'Trust Bar',
+        icon: 'ShieldCheck',
+        category: 'brand',
+        description: 'Barra de confianza: prensa, certificaciones, stats',
+        defaultProps: {
+            type: 'press', // press | stats | badges
+            items: [
+                { label: 'Forbes', value: '' },
+                { label: 'Vogue', value: '' },
+                { label: 'El Universal', value: '' },
+            ],
+            backgroundColor: '#111',
+            scrolling: false,
+        },
+    },
+    {
+        type: 'marquee',
+        label: 'Ticker / Marquee',
+        icon: 'ChevronsRight',
+        category: 'effects',
+        description: 'Texto o logos en movimiento continuo',
+        defaultProps: {
+            items: ['Envío gratis en pedidos +$999', 'Nuevas colecciones cada semana', 'Hecho en México 🇲🇽', 'Pagos seguros'],
+            speed: 30, // seconds
+            direction: 'left',
+            separator: '✦',
+            backgroundColor: '#ff007f',
+            textColor: '#ffffff',
+            fontSize: 'sm',
+        },
+    },
+    {
+        type: 'brand-story',
+        label: 'Brand Story',
+        icon: 'BookOpen',
+        category: 'brand',
+        description: 'Sección de quiénes somos — texto + imagen divididos',
+        defaultProps: {
+            eyebrow: 'Nuestra historia',
+            title: 'Nacidos desde la pasión',
+            body: 'Somos una marca creada con intención. Cada pieza que hacemos tiene un propósito y cuenta una historia.',
+            ctaLabel: 'Conoce más',
+            ctaLink: '/about',
+            image: '',
+            imagePosition: 'right', // right | left
+            backgroundColor: '#0a0a0a',
+        },
+    },
+    {
+        type: 'how-it-works',
+        label: 'Cómo Funciona',
+        icon: 'ListOrdered',
+        category: 'brand',
+        description: 'Pasos numerados — proceso de compra o uso',
+        defaultProps: {
+            title: 'Así de fácil',
+            steps: [
+                { number: '01', title: 'Elige tu producto', description: 'Navega nuestra colección y encuentra lo que te late.' },
+                { number: '02', title: 'Paga de forma segura', description: 'Múltiples métodos de pago, 100% seguro.' },
+                { number: '03', title: 'Lo recibimos en tu puerta', description: 'Envío rápido a toda la república.' },
+            ],
+            layout: 'horizontal', // horizontal | vertical
+        },
+    },
+
     {
         type: 'hero',
         label: 'Hero',
