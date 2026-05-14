@@ -47,7 +47,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     // Save to local storage whenever items change
     useEffect(() => {
         if (isLoaded) {
-            localStorage.setItem('americana_cart', JSON.stringify(items))
+            const timeoutId = setTimeout(() => {
+                localStorage.setItem('americana_cart', JSON.stringify(items))
+            }, 500)
+            return () => clearTimeout(timeoutId)
         }
     }, [items, isLoaded])
 
